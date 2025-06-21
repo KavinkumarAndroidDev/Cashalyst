@@ -1,0 +1,20 @@
+# Ignore node_modules and Git files
+node_modules
+.git
+
+# Ignore build outputs
+android/
+ios/
+web-build/
+dist/
+build/
+
+# Ignore common large assets
+*.zip
+*.mp4
+*.psd
+*.apk
+
+# Optionally exclude raw assets
+assets/raw/
+assets/videos/

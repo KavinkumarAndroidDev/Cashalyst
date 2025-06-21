@@ -4,15 +4,35 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.1",
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-picker/picker": "^2.11.1",
+    "@react-navigation/bottom-tabs": "^7.3.17",
+    "@react-navigation/native": "^7.1.13",
+    "@react-navigation/stack": "^7.3.6",
     "expo": "~53.0.12",
+    "expo-blur": "~14.1.5",
+    "expo-font": "~13.3.1",
+    "expo-linear-gradient": "^14.1.5",
+    "expo-sqlite": "^15.2.12",
     "expo-status-bar": "~2.2.3",
+    "lucide-react-native": "^0.519.0",
     "react": "19.0.0",
-    "react-native": "0.79.4"
+    "react-hook-form": "^7.58.1",
+    "react-native": "0.79.4",
+    "react-native-chart-kit": "^6.12.0",
+    "react-native-date-picker": "^5.0.13",
+    "react-native-paper": "^5.14.5",
+    "react-native-safe-area-context": "^5.4.1",
+    "react-native-screens": "^4.11.1",
+    "react-native-svg": "^15.12.0",
+    "zustand": "^5.0.5",
+    "react-native-gesture-handler": "~2.24.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
