@@ -18,6 +18,7 @@ import InsightsScreen from './screens/InsightsScreen';
 import AccountsScreen from './screens/AccountsScreen';
 import EditTransactionScreen from './screens/EditTransactionScreen';
 import 'react-native-gesture-handler';
+import useStore from './hooks/useStore';
 
 
 const Stack = createStackNavigator();
@@ -132,6 +133,11 @@ export default function App() {
         console.log('Should show setup screen:', shouldShowSetup); // Debug log
         
         setInitialRoute(shouldShowSetup ? 'Setup' : 'Main');
+        // Load accounts and transactions if setup is complete
+        if (!shouldShowSetup && typeof useStore.getState === 'function') {
+          await useStore.getState().loadAccounts();
+          await useStore.getState().loadTransactions();
+        }
         setIsLoading(false);
       } catch (error) {
         console.error('Failed to initialize app:', error);
@@ -154,6 +160,11 @@ export default function App() {
     try {
       await AsyncStorage.setItem('setup_complete', 'true');
       setInitialRoute('Main');
+      // Load accounts and transactions after onboarding
+      if (typeof useStore.getState === 'function') {
+        await useStore.getState().loadAccounts();
+        await useStore.getState().loadTransactions();
+      }
     } catch (error) {
       console.error('Failed to mark setup as complete:', error);
     }
@@ -198,24 +209,28 @@ export default function App() {
     <PaperProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="Setup"
           screenOptions={{
             headerShown: false,
           }}
         >
-          <Stack.Screen 
-            name="Setup" 
-            component={SetupScreen}
-            initialParams={{ onSetupComplete: handleSetupComplete }}
-          />
-          <Stack.Screen 
-            name="Main" 
-            component={MainTabNavigator}
-          />
-          <Stack.Screen 
-            name="EditTransaction" 
-            component={EditTransactionScreen}
-          />
+          {initialRoute === 'Setup' ? (
+            <Stack.Screen 
+              name="Setup" 
+              component={SetupScreen}
+              initialParams={{ onSetupComplete: handleSetupComplete }}
+            />
+          ) : (
+            <>
+              <Stack.Screen 
+                name="Main" 
+                component={MainTabNavigator}
+              />
+              <Stack.Screen 
+                name="EditTransaction" 
+                component={EditTransactionScreen}
+              />
+            </>
+          )}
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

@@ -127,8 +127,11 @@ const SetupScreen = ({ navigation, route }) => {
           balance: parseFloat(source.balance) || 0,
         });
       }
+      // Ensure global state is synced with storage
+      if (typeof useStore.getState === 'function' && useStore.getState().loadAccounts) {
+        await useStore.getState().loadAccounts();
+      }
       if (onSetupComplete) await onSetupComplete();
-      await AsyncStorage.setItem('setup_complete', 'true');
       Alert.alert(
         'Welcome to Cashalyst!',
         'Your money sources have been set up successfully. You can now start tracking your transactions!',
