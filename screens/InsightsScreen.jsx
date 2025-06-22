@@ -48,7 +48,7 @@ const CATEGORY_ICONS = {
 };
 
 const InsightsScreen = ({ navigation }) => {
-  const { transactions, accounts, getStats } = useStore();
+  const { transactions, accounts } = useStore();
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [stats, setStats] = useState({
     totalBalance: 0,
@@ -57,10 +57,34 @@ const InsightsScreen = ({ navigation }) => {
     monthlySavings: 0,
   });
 
-  useEffect(() => {
-    const currentStats = getStats();
-    setStats(currentStats);
-  }, [transactions, accounts]);
+  // Filtering logic
+  const getFilteredTransactions = () => {
+    const today = new Date();
+    if (selectedPeriod === 'week') {
+      const start = new Date(today);
+      start.setDate(today.getDate() - 6);
+      return transactions.filter(t => {
+        const d = new Date(t.date);
+        return d >= start && d <= today;
+      });
+    } else if (selectedPeriod === 'month') {
+      const month = today.getMonth();
+      const year = today.getFullYear();
+      return transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getMonth() === month && d.getFullYear() === year;
+      });
+    } else if (selectedPeriod === 'year') {
+      const year = today.getFullYear();
+      return transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getFullYear() === year;
+      });
+    }
+    return transactions;
+  };
+
+  const filteredTransactions = getFilteredTransactions();
 
   const periods = [
     { value: 'week', label: 'Week' },
@@ -72,7 +96,7 @@ const InsightsScreen = ({ navigation }) => {
   const getCategoryBreakdown = () => {
     const categoryData = {};
     
-    transactions.forEach(transaction => {
+    filteredTransactions.forEach(transaction => {
       if (transaction.type === 'expense') {
         if (categoryData[transaction.category]) {
           categoryData[transaction.category] += transaction.amount;
@@ -109,59 +133,110 @@ const InsightsScreen = ({ navigation }) => {
     return colors[category] || '#94A3B8';
   };
 
-  // Get monthly trend data
-  const getMonthlyTrend = (monthsToShow = 6) => {
-    // Get all months with transactions, sorted ascending
-    const monthMap = {};
-    transactions.forEach(transaction => {
-      const date = new Date(transaction.date);
-      const key = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}`;
-      if (!monthMap[key]) {
-        monthMap[key] = { income: 0, expense: 0 };
+  // Get trend data
+  const getTrendData = (period, txns) => {
+    if (period === 'week') {
+      // 7 days: today and previous 6 days
+      const days = [];
+      const today = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        days.push(d);
       }
-      if (transaction.type === 'income') {
-        monthMap[key].income += transaction.amount;
-      } else if (transaction.type === 'expense') {
-        monthMap[key].expense += transaction.amount;
-      }
-    });
-    // Sort months chronologically
-    const sortedKeys = Object.keys(monthMap).sort();
-    // Only show the last N months
-    const lastKeys = sortedKeys.slice(-monthsToShow);
-    const labels = lastKeys.map(key => {
-      const [year, month] = key.split('-');
-      return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(month)-1]} '${year.slice(-2)}`;
-    });
-    const incomeData = lastKeys.map(key =>
-      isFinite(monthMap[key].income) ? monthMap[key].income : 0
-    );
-    const expenseData = lastKeys.map(key =>
-      isFinite(monthMap[key].expense) ? monthMap[key].expense : 0
-    );
-    
-    return {
-      labels,
-      datasets: [
-        {
-          data: incomeData,
-          color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-          strokeWidth: 2,
-        },
-        {
-          data: expenseData,
-          color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`,
-          strokeWidth: 2,
-        },
-      ],
-    };
+      const labels = days.map(d => `${d.getDate()}/${d.getMonth() + 1}`);
+      const incomeData = days.map(day => txns.filter(t => t.type === 'income' && new Date(t.date).toDateString() === day.toDateString()).reduce((sum, t) => sum + t.amount, 0));
+      const expenseData = days.map(day => txns.filter(t => t.type === 'expense' && new Date(t.date).toDateString() === day.toDateString()).reduce((sum, t) => sum + t.amount, 0));
+      return {
+        labels,
+        datasets: [
+          { data: incomeData, color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`, strokeWidth: 2 },
+          { data: expenseData, color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`, strokeWidth: 2 },
+        ],
+      };
+    } else if (period === 'month') {
+      // Group by week in current month
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      // Find week ranges (1-7, 8-14, 15-21, 22-28, 29-end)
+      const weekRanges = [
+        [1, 7],
+        [8, 14],
+        [15, 21],
+        [22, 28],
+        [29, daysInMonth],
+      ];
+      const labels = weekRanges.map((_, i) => `W${i + 1}`);
+      const incomeData = weekRanges.map(([start, end]) =>
+        txns.filter(t => {
+          const d = new Date(t.date);
+          return (
+            t.type === 'income' &&
+            d.getMonth() === month &&
+            d.getFullYear() === year &&
+            d.getDate() >= start && d.getDate() <= end
+          );
+        }).reduce((sum, t) => sum + t.amount, 0)
+      );
+      const expenseData = weekRanges.map(([start, end]) =>
+        txns.filter(t => {
+          const d = new Date(t.date);
+          return (
+            t.type === 'expense' &&
+            d.getMonth() === month &&
+            d.getFullYear() === year &&
+            d.getDate() >= start && d.getDate() <= end
+          );
+        }).reduce((sum, t) => sum + t.amount, 0)
+      );
+      return {
+        labels,
+        datasets: [
+          { data: incomeData, color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`, strokeWidth: 2 },
+          { data: expenseData, color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`, strokeWidth: 2 },
+        ],
+      };
+    } else if (period === 'year') {
+      // Current year, group by month
+      const today = new Date();
+      const year = today.getFullYear();
+      const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const incomeData = labels.map((label, i) => txns.filter(t => t.type === 'income' && new Date(t.date).getMonth() === i && new Date(t.date).getFullYear() === year).reduce((sum, t) => sum + t.amount, 0));
+      const expenseData = labels.map((label, i) => txns.filter(t => t.type === 'expense' && new Date(t.date).getMonth() === i && new Date(t.date).getFullYear() === year).reduce((sum, t) => sum + t.amount, 0));
+      return {
+        labels,
+        datasets: [
+          { data: incomeData, color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`, strokeWidth: 2 },
+          { data: expenseData, color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`, strokeWidth: 2 },
+        ],
+      };
+    }
+    return { labels: [], datasets: [] };
   };
+
+  const trendData = getTrendData(selectedPeriod, filteredTransactions);
+
+  // Overview logic:
+  const overview = React.useMemo(() => {
+    let income = 0, expense = 0;
+    filteredTransactions.forEach(t => {
+      if (t.type === 'income') income += t.amount;
+      else if (t.type === 'expense') expense += t.amount;
+    });
+    return {
+      income,
+      expense,
+      savings: income - expense,
+    };
+  }, [filteredTransactions]);
 
   // Get source breakdown
   const getSourceBreakdown = () => {
     const sourceData = {};
     
-    transactions.forEach(transaction => {
+    filteredTransactions.forEach(transaction => {
       if (sourceData[transaction.source]) {
         sourceData[transaction.source] += transaction.amount;
       } else {
@@ -192,7 +267,6 @@ const InsightsScreen = ({ navigation }) => {
   };
 
   const categoryBreakdown = getCategoryBreakdown();
-  const monthlyTrend = getMonthlyTrend();
   const sourceBreakdown = getSourceBreakdown();
 
   // Helper for rendering Lucide icon for category
@@ -228,37 +302,37 @@ const InsightsScreen = ({ navigation }) => {
           <AppSegmentedButton items={periods.map(p=>p.label)} selectedIndex={periods.findIndex(p=>p.value===selectedPeriod)} onSelect={(index)=>setSelectedPeriod(periods[index].value)} />
         </Surface>
         {/* Summary Cards */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.lg, marginBottom: 8 }}>Overview</Text>
+        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.lg, marginBottom: 8 }}>Overview ({periods.find(p=>p.value===selectedPeriod).label})</Text>
         <View style={{ flexDirection: 'row', gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
           <Surface style={theme.card}>
             <View style={{ alignItems: 'center', padding: theme.spacing.md }}>
               <TrendingUp color={theme.colors.accent} size={20} style={{ marginBottom: 8 }} />
-              <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 4 }}>{formatCurrency(stats.monthlyIncome)}</Text>
+              <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 4 }}>{formatCurrency(overview.income)}</Text>
               <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textSubtle }}>Income</Text>
             </View>
           </Surface>
           <Surface style={theme.card}>
             <View style={{ alignItems: 'center', padding: theme.spacing.md }}>
               <TrendingDown color={theme.colors.error} size={20} style={{ marginBottom: 8 }} />
-              <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 4 }}>{formatCurrency(stats.monthlyExpense)}</Text>
+              <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 4 }}>{formatCurrency(overview.expense)}</Text>
               <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textSubtle }}>Expenses</Text>
             </View>
           </Surface>
           <Surface style={theme.card}>
             <View style={{ alignItems: 'center', padding: theme.spacing.md }}>
               <PiggyBank color={theme.colors.success} size={20} style={{ marginBottom: 8 }} />
-              <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 4 }}>{formatCurrency(stats.monthlySavings)}</Text>
+              <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 4 }}>{formatCurrency(overview.savings)}</Text>
               <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textSubtle }}>Savings</Text>
             </View>
           </Surface>
         </View>
-        {/* Monthly Trend Chart */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginBottom: 8 }}>Monthly Trend</Text>
+        {/* Trend Chart */}
+        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginBottom: 8 }}>{periods.find(p=>p.value===selectedPeriod).label} Trend</Text>
         <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}> {/* Chart container */}
-          {monthlyTrend.labels.length > 0 &&
-            monthlyTrend.datasets.every(ds => isValidDataArray(ds.data)) ? (
+          {trendData.labels.length > 0 &&
+            trendData.datasets.every(ds => isValidDataArray(ds.data)) ? (
             <LineChart
-              data={monthlyTrend}
+              data={trendData}
               width={width - theme.spacing.lg * 2 - 20}
               height={220}
               chartConfig={{

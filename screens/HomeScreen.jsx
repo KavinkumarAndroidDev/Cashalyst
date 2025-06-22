@@ -12,33 +12,38 @@ import { Surface, FAB } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import useStore from '../hooks/useStore';
 import { formatCurrency } from '../utils/formatCurrency';
-import { CreditCard, TrendingUp, TrendingDown, PlusCircle, List, BarChart2, Wallet, ShoppingCart, Utensils, Film, PiggyBank, Banknote, Calendar, ArrowDownCircle, ArrowUpCircle } from 'lucide-react-native';
+import { CreditCard, TrendingUp, TrendingDown, PlusCircle, List, BarChart2, Wallet, ShoppingCart, Utensils, Film, PiggyBank, Banknote, Calendar, ArrowDownCircle, ArrowUpCircle, Car, FileText, Book } from 'lucide-react-native';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
 
 const { width } = Dimensions.get('window');
 
-const ICONS = {
-  income: ArrowDownCircle,
-  expense: ArrowUpCircle,
-  shopping: ShoppingCart,
-  food: Utensils,
-  entertainment: Film,
-  savings: PiggyBank,
-  bank: Banknote,
-  default: CreditCard,
+const CATEGORY_ICONS = {
+  'Food & Dining': Utensils,
+  'Transportation': Car,
+  'Shopping': ShoppingCart,
+  'Entertainment': Film,
+  'Bills & Utilities': Banknote,
+  'Healthcare': FileText,
+  'Education': Book,
+  'Travel': Calendar,
+  'Other': PiggyBank,
 };
 
-const getLucideIcon = (type, category) => {
-  if (type === 'income') return ArrowDownCircle;
-  if (type === 'expense') {
-    if (category && category.toLowerCase().includes('shop')) return ShoppingCart;
-    if (category && category.toLowerCase().includes('food')) return Utensils;
-    if (category && category.toLowerCase().includes('entertain')) return Film;
-    return ArrowUpCircle;
-  }
-  return CreditCard;
+const getCategoryColor = (category) => {
+  const colors = {
+    'Food & Dining': '#EF4444',
+    'Transportation': '#3B82F6',
+    'Shopping': '#8B5CF6',
+    'Entertainment': '#F59E0B',
+    'Bills & Utilities': '#10B981',
+    'Healthcare': '#EC4899',
+    'Education': '#06B6D4',
+    'Travel': '#84CC16',
+    'Other': '#94A3B8',
+  };
+  return colors[category] || '#94A3B8';
 };
 
 const HomeScreen = ({ navigation }) => {
@@ -196,12 +201,14 @@ const HomeScreen = ({ navigation }) => {
             </Surface>
           ) : (
             recentTransactions.map((transaction) => {
-              const Icon = getLucideIcon(transaction.type, transaction.category);
               return (
                 <Surface key={transaction.id} style={styles.transactionCard}>
                   <View style={styles.transactionRow}>
                     <View style={styles.transactionIconWrap}>
-                      <Icon color={getTransactionColor(transaction.type)} size={22} />
+                      {(() => {
+                        const Icon = CATEGORY_ICONS[transaction.category] || PiggyBank;
+                        return <Icon color={getCategoryColor(transaction.category)} size={22} />;
+                      })()}
                     </View>
                     <View style={styles.transactionDetails}>
                       <Text style={[styles.transactionTitle, { fontFamily: 'Inter_600SemiBold' }]}>{transaction.title}</Text>
@@ -212,7 +219,7 @@ const HomeScreen = ({ navigation }) => {
                       </View>
                     </View>
                     <View style={styles.transactionAmountWrap}>
-                      <Text style={[styles.amountText, { color: getTransactionColor(transaction.type), fontFamily: 'Inter_700Bold' }]}> {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}</Text>
+                      <Text style={[styles.amountText, { color: getCategoryColor(transaction.category), fontFamily: 'Inter_700Bold' }]}> {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}</Text>
                     </View>
                   </View>
                 </Surface>

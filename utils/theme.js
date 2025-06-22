@@ -4,6 +4,7 @@
 const colors = {
   background: '#0F172A',
   card: '#1E293B',
+  input: '#1E293B',
   accent: '#3B82F6',
   accentGreen: '#10B981',
   textMain: '#F9FAFB',

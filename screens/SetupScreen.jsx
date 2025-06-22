@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   StatusBar,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { TextInput, Surface } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,7 +18,7 @@ import { generateId } from '../utils/formatCurrency';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, CreditCard, Wallet } from 'lucide-react-native';
 import theme from '../utils/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,7 +28,15 @@ const { width } = Dimensions.get('window');
 const SetupScreen = ({ navigation, route }) => {
   const { addAccount, loading } = useStore();
   const onSetupComplete = route?.params?.onSetupComplete;
-  const [sources, setSources] = useState([]);
+  const [sources, setSources] = useState([
+    {
+      id: generateId(),
+      name: '',
+      type: 'upi',
+      icon: '💳',
+      balance: '',
+    }
+  ]);
   const [accountsLoaded, setAccountsLoaded] = useState(true);
 
   const sourceTypes = {
@@ -44,6 +53,21 @@ const SetupScreen = ({ navigation, route }) => {
     cash: '💵',
     wallet: '📱',
     custom: '🎯',
+  };
+
+  const CATEGORY_ICONS = {
+    upi: CreditCard,
+    bank: Banknote,
+    cash: PiggyBank,
+    wallet: ShoppingCart,
+    custom: PiggyBank,
+  };
+  const CATEGORY_COLORS = {
+    upi: '#3B82F6',
+    bank: '#8B5CF6',
+    cash: '#10B981',
+    wallet: '#F59E0B',
+    custom: '#EF4444',
   };
 
   const updateSource = (id, field, value, iconOverride) => {
@@ -111,10 +135,10 @@ const SetupScreen = ({ navigation, route }) => {
         [
           {
             text: 'Get Started',
-            onPress: () => navigation.reset({
-              index: 0,
-              routes: [{ name: 'Main' }],
-            }),
+            onPress: () => {
+              // Navigate to Main screen
+              navigation.replace('Main');
+            },
           },
         ]
       );
@@ -182,7 +206,10 @@ const SetupScreen = ({ navigation, route }) => {
             <Surface key={source.id || source.name + '-' + index} style={[styles.sourceCard, { marginBottom: theme.spacing.lg, padding: theme.spacing.lg }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={styles.sourceInfo}>
-                  <Text style={styles.sourceIcon}>{source.icon}</Text>
+                  {(() => {
+                    const Icon = CATEGORY_ICONS[source.type] || CreditCard;
+                    return <Icon color={CATEGORY_COLORS[source.type] || '#94A3B8'} size={22} style={{ marginRight: 10 }} />;
+                  })()}
                   <View style={styles.sourceDetails}>
                     <Text style={styles.sourceName}>{source.name}</Text>
                     <Text style={styles.sourceType}>
@@ -200,28 +227,54 @@ const SetupScreen = ({ navigation, route }) => {
                   </AppButton>
                 )}
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: theme.spacing.md }}>
-                <View style={{ flex: 1, marginRight: theme.spacing.md }}>
-                  <AppDropdown
-                    items={Object.entries(sourceTypes).map(([key, type]) => ({ label: `${type.icon} ${type.label}`, value: key }))}
-                    selectedValue={source.type}
-                    onValueChange={value => updateSource(source.id, 'type', value, typeIcons[value])}
-                  />
+              <View style={{ marginTop: theme.spacing.md }}>
+                {/* Type Selection */}
+                <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Type</Text>
+                <View style={styles.typeGrid}>
+                  {Object.entries(sourceTypes).map(([key, type], idx) => {
+                    const isSelected = source.type === key;
+                    const Icon = CATEGORY_ICONS[key] || CreditCard;
+                    return (
+                      <TouchableOpacity
+                        key={key}
+                        style={[
+                          styles.typeCard,
+                          isSelected && styles.typeCardSelected,
+                          { marginRight: idx % 2 === 0 ? 8 : 0, marginBottom: 12, width: '48%' }
+                        ]}
+                        onPress={() => updateSource(source.id, 'type', key)}
+                        activeOpacity={0.85}
+                      >
+                        <Icon color={isSelected ? '#fff' : CATEGORY_COLORS[key] || '#94A3B8'} size={24} style={{ marginBottom: 4 }} />
+                        <Text style={[styles.typeCardLabel, isSelected && styles.typeCardLabelSelected]}>{type.label}</Text>
+                        {isSelected && (
+                          <View style={styles.checkmarkCircle}>
+                            <Text style={styles.checkmark}>✓</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
-                <View style={{ flex: 2, marginRight: theme.spacing.md }}>
-                  <AppTextField
-                    value={source.name}
-                    onChangeText={text => updateSource(source.id, 'name', text)}
-                    placeholder="Source Name"
-                  />
-                </View>
-                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+
+                {/* Source Name */}
+                <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginTop: 16, marginBottom: 8 }}>Source Name</Text>
+                <AppTextField
+                  value={source.name}
+                  onChangeText={text => updateSource(source.id, 'name', text)}
+                  placeholder="e.g., HDFC Bank, Cash, Paytm"
+                />
+
+                {/* Amount */}
+                <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginTop: 16, marginBottom: 8 }}>Current Balance</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={styles.currencySymbol}>₹</Text>
                   <AppTextField
                     value={source.balance}
                     onChangeText={text => updateSource(source.id, 'balance', text)}
                     keyboardType="numeric"
-                    placeholder="0"
+                    placeholder="0.00"
+                    style={{ flex: 1 }}
                   />
                 </View>
               </View>
@@ -380,10 +433,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  sourceIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
   sourceDetails: {
     flex: 1,
   },
@@ -489,6 +538,71 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.2,
+  },
+  typeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  typeCard: {
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: theme.colors.card,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'visible',
+  },
+  typeCardSelected: {
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
+    shadowColor: theme.colors.accent,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  typeCardIcon: {
+    fontSize: 28,
+    marginBottom: 6,
+    color: theme.colors.textSubtle,
+  },
+  typeCardIconSelected: {
+    color: '#fff',
+  },
+  typeCardLabel: {
+    fontSize: 11,
+    fontFamily: theme.font.family.medium,
+    color: theme.colors.textSubtle,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  typeCardLabelSelected: {
+    color: '#fff',
+    fontFamily: theme.font.family.bold,
+  },
+  checkmarkCircle: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: theme.colors.accent,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  checkmark: {
+    color: theme.colors.accent,
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: -1,
   },
 });
 

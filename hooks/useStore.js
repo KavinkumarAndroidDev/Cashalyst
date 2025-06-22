@@ -223,6 +223,23 @@ const useStore = create((set, get) => ({
     } catch (error) {
       set({ error: error.message, loading: false });
     }
+  },
+
+  // Update transaction
+  updateTransaction: async (id, updatedData) => {
+    set({ loading: true, error: null });
+    try {
+      await require('../db/asyncStorageService').updateTransaction(id, updatedData);
+      // Reload data
+      await get().loadTransactions();
+      await get().loadAccounts();
+      await get().loadMonthlyStats();
+      await get().loadCategoryStats();
+      set({ loading: false });
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
   }
 }));
 

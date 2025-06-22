@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   StatusBar,
+  TouchableOpacity,
 } from 'react-native';
 import { Surface, Searchbar, Chip } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,9 +14,36 @@ import { formatCurrency } from '../utils/formatCurrency';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Pencil, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book } from 'lucide-react-native';
 import AppSegmentedButton from '../components/AppSegmentedButton';
 import theme from '../utils/theme';
+
+const CATEGORY_ICONS = {
+  'Food & Dining': Utensils,
+  'Transportation': Car,
+  'Shopping': ShoppingCart,
+  'Entertainment': Film,
+  'Bills & Utilities': Banknote,
+  'Healthcare': FileText,
+  'Education': Book,
+  'Travel': Calendar,
+  'Other': PiggyBank,
+};
+
+const getCategoryColor = (category) => {
+  const colors = {
+    'Food & Dining': '#EF4444',
+    'Transportation': '#3B82F6',
+    'Shopping': '#8B5CF6',
+    'Entertainment': '#F59E0B',
+    'Bills & Utilities': '#10B981',
+    'Healthcare': '#EC4899',
+    'Education': '#06B6D4',
+    'Travel': '#84CC16',
+    'Other': '#94A3B8',
+  };
+  return colors[category] || '#94A3B8';
+};
 
 const HistoryScreen = ({ navigation }) => {
   const { transactions, accounts } = useStore();
@@ -70,26 +98,6 @@ const HistoryScreen = ({ navigation }) => {
       case 'expense': return '#EF4444';
       default: return '#94A3B8';
     }
-  };
-
-  const getCategoryIcon = (category) => {
-    const icons = {
-      'Food & Dining': '🍽️',
-      'Transportation': '🚗',
-      'Shopping': '🛍️',
-      'Entertainment': '🎬',
-      'Bills & Utilities': '📱',
-      'Healthcare': '🏥',
-      'Education': '📚',
-      'Travel': '✈️',
-      'Salary': '💼',
-      'Freelance': '💻',
-      'Investment': '📈',
-      'Gift': '🎁',
-      'Refund': '↩️',
-      'Other': '📝',
-    };
-    return icons[category] || '📝';
   };
 
   const formatDate = (dateString) => {
@@ -151,10 +159,12 @@ const HistoryScreen = ({ navigation }) => {
             onChangeText={setSearchQuery}
             value={searchQuery}
             style={styles.searchBar}
-            iconColor="#94A3B8"
+            iconColor={theme.colors.textSubtle}
             inputStyle={styles.searchInput}
+            placeholderTextColor={theme.colors.textHelper}
           />
         </View>
+
 
         {/* Filters */}
         <View style={styles.filtersSection}>
@@ -173,11 +183,12 @@ const HistoryScreen = ({ navigation }) => {
           {/* Source Filter */}
           <View style={styles.filterGroup}>
             <Text style={styles.filterLabel}>Source</Text>
-            <AppSegmentedButton
-              items={['All Sources', ...accounts.map((account) => account.name)]}
-              selectedIndex={selectedSource === 'all' ? 0 : accounts.findIndex((account) => account.name === selectedSource) + 1}
-              onSelect={(index) => setSelectedSource(index === 0 ? 'all' : accounts[index - 1].name)}
-              keyExtractor={(item, index) => (accounts[index - 1]?.id ? accounts[index - 1].id : item + '-' + index)}
+            <AppDropdown
+              items={[{ label: 'All Sources', value: 'all' }, ...accounts.map((account) => ({ label: account.name, value: account.name }))]}
+              selectedValue={selectedSource}
+              onValueChange={setSelectedSource}
+              placeholder="Select source"
+              style={{ marginBottom: theme.spacing.lg }}
             />
           </View>
         </View>
@@ -221,9 +232,10 @@ const HistoryScreen = ({ navigation }) => {
               <Surface key={transaction.id || transaction.title + '-' + index} style={styles.transactionCard}>
                 <View style={styles.transactionRow}>
                   <View style={styles.transactionIcon}>
-                    <Text style={styles.categoryIcon}>
-                      {getCategoryIcon(transaction.category)}
-                    </Text>
+                    {(() => {
+                      const Icon = CATEGORY_ICONS[transaction.category] || PiggyBank;
+                      return <Icon color={getCategoryColor(transaction.category)} size={22} />;
+                    })()}
                   </View>
                   
                   <View style={styles.transactionDetails}>
@@ -237,6 +249,12 @@ const HistoryScreen = ({ navigation }) => {
                       ]}>
                         {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}
                       </Text>
+                      <TouchableOpacity
+                        style={{ marginLeft: 8, padding: 4 }}
+                        onPress={() => navigation.navigate('EditTransaction', { transaction })}
+                      >
+                        <Pencil color={theme.colors.textSubtle} size={18} />
+                      </TouchableOpacity>
                     </View>
                     
                     <View style={styles.transactionMeta}>
@@ -320,19 +338,20 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   searchBar: {
-    borderRadius: 16,
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radii.button,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     elevation: 0,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 1,
     shadowRadius: 8,
   },
   searchInput: {
-    fontSize: 16,
-    color: '#F9FAFB',
+    fontFamily: theme.font.family.regular,
+    fontSize: theme.font.size.body,
+    color: theme.colors.textMain,
   },
   filtersSection: {
     marginBottom: 24,
@@ -472,9 +491,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
     borderWidth: 1,
     borderColor: 'rgba(148, 163, 184, 0.2)',
-  },
-  categoryIcon: {
-    fontSize: 20,
   },
   transactionDetails: {
     flex: 1,

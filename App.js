@@ -9,12 +9,14 @@ import { Home, PlusCircle, List, BarChart2, Wallet } from 'lucide-react-native';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initDatabase } from './db/asyncStorageService';
+import SplashScreen from './components/SplashScreen';
 import SetupScreen from './screens/SetupScreen';
 import HomeScreen from './screens/HomeScreen';
 import AddTransactionScreen from './screens/AddTransactionScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import InsightsScreen from './screens/InsightsScreen';
 import AccountsScreen from './screens/AccountsScreen';
+import EditTransactionScreen from './screens/EditTransactionScreen';
 import 'react-native-gesture-handler';
 
 
@@ -102,7 +104,9 @@ function MainTabNavigator() {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
   const [initialRoute, setInitialRoute] = useState('Setup');
+  const [currentRoute, setCurrentRoute] = useState('Setup');
   let [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
@@ -110,20 +114,73 @@ export default function App() {
   });
 
   useEffect(() => {
+    setCurrentRoute(initialRoute);
+  }, [initialRoute]);
+
+  useEffect(() => {
     const initializeApp = async () => {
       try {
-        await initDatabase();
+        // Initialize database in background
+        initDatabase().catch(console.error);
+        
+        // Check setup status immediately
         const setupComplete = await AsyncStorage.getItem('setup_complete');
-        setInitialRoute(setupComplete === 'true' ? 'Main' : 'Setup');
+        console.log('Setup complete status:', setupComplete); // Debug log
+        
+        // If setup_complete is null, undefined, or not 'true', show setup screen
+        const shouldShowSetup = !setupComplete || setupComplete !== 'true';
+        console.log('Should show setup screen:', shouldShowSetup); // Debug log
+        
+        setInitialRoute(shouldShowSetup ? 'Setup' : 'Main');
         setIsLoading(false);
       } catch (error) {
         console.error('Failed to initialize app:', error);
+        // On error, default to setup screen
+        setInitialRoute('Setup');
         setIsLoading(false);
       }
     };
-    initializeApp();
+    
+    // Add a small delay to ensure fonts are loaded
+    const timer = setTimeout(initializeApp, 100);
+    return () => clearTimeout(timer);
   }, []);
 
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
+
+  const handleSetupComplete = async () => {
+    try {
+      await AsyncStorage.setItem('setup_complete', 'true');
+      setInitialRoute('Main');
+    } catch (error) {
+      console.error('Failed to mark setup as complete:', error);
+    }
+  };
+
+  // Function to reset setup status for testing (you can call this from console)
+  const resetSetupStatus = async () => {
+    try {
+      await AsyncStorage.removeItem('setup_complete');
+      console.log('Setup status reset successfully');
+      // Reload the app to show setup screen
+      setInitialRoute('Setup');
+    } catch (error) {
+      console.error('Failed to reset setup status:', error);
+    }
+  };
+
+  // Expose reset function globally for testing
+  if (typeof global !== 'undefined') {
+    global.resetSetupStatus = resetSetupStatus;
+    global.showSetupScreen = () => {
+      setInitialRoute('Setup');
+      setCurrentRoute('Setup');
+    };
+  }
+
+  // Show loading screen only if fonts aren't loaded or app is initializing
   if (!fontsLoaded || isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F172A' }}>
@@ -133,11 +190,15 @@ export default function App() {
     );
   }
 
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
+
   return (
     <PaperProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName={initialRoute}
+          initialRouteName="Setup"
           screenOptions={{
             headerShown: false,
           }}
@@ -145,17 +206,15 @@ export default function App() {
           <Stack.Screen 
             name="Setup" 
             component={SetupScreen}
-            options={{
-              initialParams: {
-                onSetupComplete: async () => {
-                  await AsyncStorage.setItem('setup_complete', 'true');
-                },
-              },
-            }}
+            initialParams={{ onSetupComplete: handleSetupComplete }}
           />
           <Stack.Screen 
             name="Main" 
             component={MainTabNavigator}
+          />
+          <Stack.Screen 
+            name="EditTransaction" 
+            component={EditTransactionScreen}
           />
         </Stack.Navigator>
       </NavigationContainer>

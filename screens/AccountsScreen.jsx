@@ -15,7 +15,7 @@ import { generateId, formatCurrency } from '../utils/formatCurrency';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, CreditCard, Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../utils/theme';
 
 const AccountsScreen = ({ navigation }) => {
@@ -141,6 +141,21 @@ const AccountsScreen = ({ navigation }) => {
 
   const groupedAccounts = getAccountsByType();
 
+  const CATEGORY_ICONS = {
+    upi: CreditCard,
+    bank: Banknote,
+    cash: PiggyBank,
+    wallet: ShoppingCart,
+    custom: PiggyBank,
+  };
+  const CATEGORY_COLORS = {
+    upi: '#3B82F6',
+    bank: '#8B5CF6',
+    cash: '#10B981',
+    wallet: '#F59E0B',
+    custom: '#EF4444',
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
@@ -191,7 +206,15 @@ const AccountsScreen = ({ navigation }) => {
             <View key={type} style={styles.typeSection}>
               <View style={styles.typeHeader}>
                 <View style={styles.typeInfo}>
-                  <Text style={styles.typeIcon}>{typeInfo.icon}</Text>
+                  <View style={[
+                    styles.accountIcon,
+                    { backgroundColor: (CATEGORY_COLORS[type] || '#94A3B8') + '20' }
+                  ]}>
+                    {(() => {
+                      const Icon = CATEGORY_ICONS[type] || CreditCard;
+                      return <Icon color={CATEGORY_COLORS[type] || '#94A3B8'} size={20} />;
+                    })()}
+                  </View>
                   <View>
                     <Text style={styles.typeTitle}>{typeInfo.label}</Text>
                     <Text style={styles.typeCount}>
@@ -210,9 +233,12 @@ const AccountsScreen = ({ navigation }) => {
                     <View style={styles.accountInfo}>
                       <View style={[
                         styles.accountIcon,
-                        { backgroundColor: typeInfo.color + '20' }
+                        { backgroundColor: (CATEGORY_COLORS[account.type] || '#94A3B8') + '20' }
                       ]}>
-                        <Text style={styles.accountIconText}>{account.icon}</Text>
+                        {(() => {
+                          const Icon = CATEGORY_ICONS[account.type] || CreditCard;
+                          return <Icon color={CATEGORY_COLORS[account.type] || '#94A3B8'} size={20} />;
+                        })()}
                       </View>
                       <View style={styles.accountDetails}>
                         <Text style={styles.accountName}>{account.name}</Text>
@@ -228,14 +254,16 @@ const AccountsScreen = ({ navigation }) => {
                         <AppButton
                           style={styles.editButton}
                           onPress={() => openEditModal(account)}
+                          variant="text"
                         >
-                          <Text style={styles.editButtonText}>✏️</Text>
+                          <Pencil color={theme.colors.textSubtle} size={18} />
                         </AppButton>
                         <AppButton
                           style={styles.deleteButton}
                           onPress={() => handleDelete(account)}
+                          variant="text"
                         >
-                          <Text style={styles.deleteButtonText}>🗑️</Text>
+                          <Trash2 color={theme.colors.error} size={18} />
                         </AppButton>
                       </View>
                     </View>
@@ -280,7 +308,7 @@ const AccountsScreen = ({ navigation }) => {
                 {editingAccount ? 'Edit Account' : 'Add New Account'}
               </Text>
               <AppButton variant="text" onPress={closeModal}>
-                <Text style={{fontSize:28}}>&times;</Text>
+                <Text style={{ fontSize: 28, color: '#F9FAFB' }}>{'\u00D7'}</Text>
               </AppButton>
             </View>
             <Surface style={{ borderRadius: 20, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, padding: theme.spacing.lg, margin: theme.spacing.lg }}>

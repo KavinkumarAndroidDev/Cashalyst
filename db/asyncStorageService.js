@@ -302,4 +302,48 @@ export const migrateAccounts = async () => {
   if (changed) {
     await storeData(ACCOUNTS_KEY, migrated);
   }
+};
+
+// Update transaction
+export const updateTransaction = async (id, updatedData) => {
+  try {
+    const transactions = await getData(TRANSACTIONS_KEY) || [];
+    const accounts = await getData(ACCOUNTS_KEY) || [];
+    const transactionIndex = transactions.findIndex(t => t.id === id);
+    if (transactionIndex === -1) {
+      throw new Error('Transaction not found');
+    }
+    const oldTransaction = transactions[transactionIndex];
+    const newTransaction = { ...oldTransaction, ...updatedData, id };
+
+    // If source or amount/type changed, update account balances
+    if (
+      oldTransaction.source !== newTransaction.source ||
+      oldTransaction.amount !== newTransaction.amount ||
+      oldTransaction.type !== newTransaction.type
+    ) {
+      // Reverse old transaction effect
+      const oldAccountIndex = accounts.findIndex(acc => acc.name === oldTransaction.source);
+      if (oldAccountIndex !== -1) {
+        const reverse = oldTransaction.type === 'income' ? -oldTransaction.amount : oldTransaction.amount;
+        accounts[oldAccountIndex].balance += reverse;
+      }
+      // Apply new transaction effect
+      const newAccountIndex = accounts.findIndex(acc => acc.name === newTransaction.source);
+      if (newAccountIndex !== -1) {
+        const apply = newTransaction.type === 'income' ? newTransaction.amount : -newTransaction.amount;
+        accounts[newAccountIndex].balance += apply;
+      }
+      await storeData(ACCOUNTS_KEY, accounts);
+    }
+
+    // Update transaction
+    transactions[transactionIndex] = newTransaction;
+    await storeData(TRANSACTIONS_KEY, transactions);
+    console.log('Transaction updated successfully');
+    return newTransaction;
+  } catch (error) {
+    console.error('Update transaction error:', error);
+    throw error;
+  }
 }; 
