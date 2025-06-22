@@ -6,6 +6,7 @@ import {
   ScrollView,
   StatusBar,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { Surface, Searchbar, Chip } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,7 +15,7 @@ import { formatCurrency } from '../utils/formatCurrency';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
-import { ArrowLeft, Pencil, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book } from 'lucide-react-native';
+import { ArrowLeft, Pencil, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, Trash2 } from 'lucide-react-native';
 import AppSegmentedButton from '../components/AppSegmentedButton';
 import theme from '../utils/theme';
 
@@ -46,7 +47,7 @@ const getCategoryColor = (category) => {
 };
 
 const HistoryScreen = ({ navigation }) => {
-  const { transactions, accounts } = useStore();
+  const { transactions, accounts, deleteTransaction } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedSource, setSelectedSource] = useState('all');
@@ -127,6 +128,28 @@ const HistoryScreen = ({ navigation }) => {
         return total - transaction.amount;
       }
     }, 0);
+  };
+
+  const handleDelete = (transaction) => {
+    // Confirm before deleting
+    Alert.alert(
+      'Delete Transaction',
+      `Are you sure you want to delete "${transaction.title}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteTransaction(transaction.id);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete transaction. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -254,6 +277,12 @@ const HistoryScreen = ({ navigation }) => {
                         onPress={() => navigation.navigate('EditTransaction', { transaction })}
                       >
                         <Pencil color={theme.colors.textSubtle} size={18} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ marginLeft: 4, padding: 4 }}
+                        onPress={() => handleDelete(transaction)}
+                      >
+                        <Trash2 color={theme.colors.error} size={18} />
                       </TouchableOpacity>
                     </View>
                     
