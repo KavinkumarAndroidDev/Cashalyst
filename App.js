@@ -19,6 +19,8 @@ import AccountsScreen from './screens/AccountsScreen';
 import EditTransactionScreen from './screens/EditTransactionScreen';
 import 'react-native-gesture-handler';
 import useStore from './hooks/useStore';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as NavigationBar from 'expo-navigation-bar';
 
 
 const Stack = createStackNavigator();
@@ -152,6 +154,13 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync('#1E293B'); // match your tab bar color
+      NavigationBar.setButtonStyleAsync('light');
+    }
+  }, []);
+
   const handleSplashFinish = () => {
     setShowSplash(false);
   };
@@ -206,33 +215,35 @@ export default function App() {
   }
 
   return (
-    <PaperProvider>
-      <NavigationContainer>
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          {initialRoute === 'Setup' ? (
-            <Stack.Screen 
-              name="Setup" 
-              component={SetupScreen}
-              initialParams={{ onSetupComplete: handleSetupComplete }}
-            />
-          ) : (
-            <>
+    <SafeAreaProvider>
+      <PaperProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            {initialRoute === 'Setup' ? (
               <Stack.Screen 
-                name="Main" 
-                component={MainTabNavigator}
+                name="Setup" 
+                component={SetupScreen}
+                initialParams={{ onSetupComplete: handleSetupComplete }}
               />
-              <Stack.Screen 
-                name="EditTransaction" 
-                component={EditTransactionScreen}
-              />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
-    </PaperProvider>
+            ) : (
+              <>
+                <Stack.Screen 
+                  name="Main" 
+                  component={MainTabNavigator}
+                />
+                <Stack.Screen 
+                  name="EditTransaction" 
+                  component={EditTransactionScreen}
+                />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 }

@@ -230,10 +230,8 @@ const AddTransactionScreen = ({ navigation }) => {
           <AppTextField
             value={formData.note}
             onChangeText={text => updateForm('note', text)}
-            style={{ minHeight: 80, marginBottom: theme.spacing.lg }}
+            style={{ marginBottom: theme.spacing.lg }}
             placeholder="Add a note..."
-            multiline
-            numberOfLines={3}
           />
         </Surface>
         {/* Submit Button */}

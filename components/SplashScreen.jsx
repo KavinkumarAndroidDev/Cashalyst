@@ -24,8 +24,21 @@ const quotes = [
   "Save money and money will save you." + " – Unknown",
   "Being in control of your finances is a great stress reliever." + " – Unknown",
   "Spend not where you may save; spare not where you must spend." + " – John Ray",
-  "Saving must become a priority, not just a thought..." + " – Dave Ramsey"
+  "Saving must become a priority, not just a thought..." + " – Dave Ramsey",
+  // 11 new, unique quotes below
+  "Financial freedom is available to those who learn about it and work for it." + " – Robert Kiyosaki",
+  "Do not go broke trying to look rich." + " – Unknown",
+  "Wealth is the ability to fully experience life." + " – Henry David Thoreau",
+  "The lack of money is the root of all evil." + " – Mark Twain",
+  "Do not tell me where your priorities are. Show me where you spend your money and I’ll tell you what they are." + " – James W. Frick",
+  "It’s not your salary that makes you rich, it’s your spending habits." + " – Charles A. Jaffe",
+  "Try to save something while your salary is small; it’s impossible to save after you begin to earn more." + " – Jack Benny",
+  "Richness is not about what you have, but what you can give." + " – Unknown",
+  "The real measure of your wealth is how much you’d be worth if you lost all your money." + " – Unknown",
+  "A budget is telling your money where to go instead of wondering where it went." + " – John C. Maxwell",
+  "Too many people spend money they haven't earned, to buy things they don't want, to impress people they don't like." + " – Will Rogers"
 ];
+
 
 const SplashScreen = ({ onFinish }) => {
   const [currentQuote, setCurrentQuote] = useState('');
@@ -158,7 +171,7 @@ const SplashScreen = ({ onFinish }) => {
 
           {/* Version Text */}
           <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>v1.1.0</Text>
+            <Text style={styles.versionText}>v1.4.0</Text>
           </View>
         </View>
       </LinearGradient>

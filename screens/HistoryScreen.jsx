@@ -7,17 +7,27 @@ import {
   StatusBar,
   TouchableOpacity,
   Alert,
+  Animated,
+  Easing,
+  SectionList,
+  FlatList,
+  Dimensions,
+  Keyboard,
 } from 'react-native';
-import { Surface, Searchbar, Chip } from 'react-native-paper';
+import { Surface, Searchbar, Chip, IconButton, Modal, Portal, Provider as PaperProvider } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import useStore from '../hooks/useStore';
 import { formatCurrency } from '../utils/formatCurrency';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
-import { ArrowLeft, Pencil, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Pencil, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, Trash2, Filter, RefreshCw, X, SlidersHorizontal } from 'lucide-react-native';
 import AppSegmentedButton from '../components/AppSegmentedButton';
 import theme from '../utils/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AppSearchBar from '../components/AppSearchBar';
 
 const CATEGORY_ICONS = {
   'Food & Dining': Utensils,
@@ -46,40 +56,177 @@ const getCategoryColor = (category) => {
   return colors[category] || '#94A3B8';
 };
 
+const FILTERS_KEY = 'history_last_filters';
+const SAVED_VIEWS_KEY = 'history_saved_views';
+
+const EXPENSE_CATEGORIES = [
+  'Food & Dining',
+  'Transportation',
+  'Shopping',
+  'Entertainment',
+  'Bills & Utilities',
+  'Healthcare',
+  'Education',
+  'Travel',
+  'Other',
+];
+const INCOME_CATEGORIES = [
+  'Salary',
+  'Freelance',
+  'Investment',
+  'Gift',
+  'Refund',
+  'Other',
+];
+
+// Helper to get all unique categories
+const ALL_CATEGORIES = Array.from(new Set([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]));
+
 const HistoryScreen = ({ navigation }) => {
   const { transactions, accounts, deleteTransaction } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedSource, setSelectedSource] = useState('all');
   const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const insets = useSafeAreaInsets();
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [dateRange, setDateRange] = useState({ from: null, to: null });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerMode, setDatePickerMode] = useState('from');
+  const [showSubtotals, setShowSubtotals] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [modalType, setModalType] = useState(selectedType);
+  const [modalCategory, setModalCategory] = useState(selectedCategory);
+  const [modalSource, setModalSource] = useState(selectedSource);
+  const [modalDateRange, setModalDateRange] = useState(dateRange);
+  const [showModalDatePicker, setShowModalDatePicker] = useState(false);
+  const [modalDatePickerMode, setModalDatePickerMode] = useState('from');
+
+  const getTotalAmount = () => {
+    return filteredTransactions.reduce((total, transaction) => {
+      if (transaction.type === 'income') {
+        return total + transaction.amount;
+      } else {
+        return total - transaction.amount;
+      }
+    }, 0);
+  };
+
+  const [animatedTotal] = useState(new Animated.Value(Math.abs(getTotalAmount())));
+  const [lastTotal, setLastTotal] = useState(Math.abs(getTotalAmount()));
+  const [collapsedMonths, setCollapsedMonths] = useState({});
+  const [visibleCounts, setVisibleCounts] = useState({});
+  const PAGE_SIZE = 20;
+  const [savedViews, setSavedViews] = useState([]);
+
+  const windowWidth = Dimensions.get('window').width;
+  const isSmallScreen = windowWidth < 400;
+
+  useEffect(() => {
+    (async () => {
+      const last = await AsyncStorage.getItem(FILTERS_KEY);
+      if (last) {
+        const f = JSON.parse(last);
+        setSelectedType(f.selectedType || 'all');
+        setSelectedSource(f.selectedSource || 'all');
+        setSelectedCategory(f.selectedCategory || 'all');
+        setDateRange(f.dateRange || { from: null, to: null });
+        setSearchQuery(f.searchQuery || '');
+      }
+      const views = await AsyncStorage.getItem(SAVED_VIEWS_KEY);
+      if (views) setSavedViews(JSON.parse(views));
+    })();
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.setItem(FILTERS_KEY, JSON.stringify({ selectedType, selectedSource, selectedCategory, dateRange, searchQuery }));
+  }, [selectedType, selectedSource, selectedCategory, dateRange, searchQuery]);
+
+  const saveCurrentView = async () => {
+    const newView = {
+      name: `View ${savedViews.length + 1}`,
+      filters: { selectedType, selectedSource, selectedCategory, dateRange, searchQuery },
+    };
+    const updated = [...savedViews, newView];
+    setSavedViews(updated);
+    await AsyncStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(updated));
+  };
+
+  const applySavedView = (view) => {
+    setSelectedType(view.filters.selectedType);
+    setSelectedSource(view.filters.selectedSource);
+    setSelectedCategory(view.filters.selectedCategory);
+    setDateRange(view.filters.dateRange);
+    setSearchQuery(view.filters.searchQuery);
+  };
+
+  const availableCategories = selectedType === 'income'
+    ? INCOME_CATEGORIES
+    : EXPENSE_CATEGORIES;
+  useEffect(() => {
+    if (selectedCategory !== 'all' && !availableCategories.includes(selectedCategory)) {
+      setSelectedCategory('all');
+    }
+  }, [selectedType]);
 
   useEffect(() => {
     filterTransactions();
-  }, [transactions, searchQuery, selectedType, selectedSource]);
+  }, [transactions, searchQuery, selectedType, selectedSource, selectedCategory, dateRange]);
+
+  useEffect(() => {
+    const newTotal = Math.abs(getTotalAmount());
+    Animated.timing(animatedTotal, {
+      toValue: newTotal,
+      duration: 400,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+    setLastTotal(newTotal);
+  }, [filteredTransactions]);
+
+  const handleSearchChange = (text) => {
+    setSearchQuery(text);
+  };
+
+  const handleSearchSubmit = (text) => {
+    setSearchQuery(text);
+  };
+
+  const handleSearchClear = () => {
+    setSearchQuery('');
+  };
 
   const filterTransactions = () => {
     let filtered = [...transactions];
 
-    // Filter by search query
     if (searchQuery.trim()) {
       filtered = filtered.filter(transaction =>
         transaction.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         transaction.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        transaction.note.toLowerCase().includes(searchQuery.toLowerCase())
+        transaction.note.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transaction.source.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Filter by type
     if (selectedType !== 'all') {
       filtered = filtered.filter(transaction => transaction.type === selectedType);
     }
 
-    // Filter by source
     if (selectedSource !== 'all') {
       filtered = filtered.filter(transaction => transaction.source === selectedSource);
     }
 
-    // Sort by date (newest first)
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(transaction => transaction.category === selectedCategory);
+    }
+
+    if (dateRange.from) {
+      filtered = filtered.filter(transaction => new Date(transaction.date) >= new Date(dateRange.from));
+    }
+    if (dateRange.to) {
+      filtered = filtered.filter(transaction => new Date(transaction.date) <= new Date(dateRange.to));
+    }
+
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     setFilteredTransactions(filtered);
@@ -120,18 +267,7 @@ const HistoryScreen = ({ navigation }) => {
     }
   };
 
-  const getTotalAmount = () => {
-    return filteredTransactions.reduce((total, transaction) => {
-      if (transaction.type === 'income') {
-        return total + transaction.amount;
-      } else {
-        return total - transaction.amount;
-      }
-    }, 0);
-  };
-
   const handleDelete = (transaction) => {
-    // Confirm before deleting
     Alert.alert(
       'Delete Transaction',
       `Are you sure you want to delete "${transaction.title}"? This action cannot be undone.`,
@@ -152,11 +288,206 @@ const HistoryScreen = ({ navigation }) => {
     );
   };
 
+  const getIncomeExpenseTotals = () => {
+    let income = 0, expense = 0;
+    filteredTransactions.forEach(t => {
+      if (t.type === 'income') income += t.amount;
+      else if (t.type === 'expense') expense += t.amount;
+    });
+    return { income, expense };
+  };
+
+  const groupByMonth = (txs) => {
+    const groups = {};
+    txs.forEach(tx => {
+      const d = new Date(tx.date);
+      const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(tx);
+    });
+    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+  };
+
+  const monthSections = groupByMonth(filteredTransactions).map(([month, txs]) => {
+    const visible = visibleCounts[month] || PAGE_SIZE;
+    return {
+      title: month,
+      data: collapsedMonths[month] ? [] : txs.slice(0, visible),
+      allData: txs,
+      visible,
+      hasMore: txs.length > visible,
+    };
+  });
+
+  const toggleMonth = (month) => {
+    setCollapsedMonths(prev => ({ ...prev, [month]: !prev[month] }));
+  };
+  const loadMoreMonth = (month) => {
+    setVisibleCounts(prev => ({ ...prev, [month]: (prev[month] || PAGE_SIZE) + PAGE_SIZE }));
+  };
+
+  const openFilterModal = () => {
+    setModalType(selectedType);
+    setModalCategory(selectedCategory);
+    setModalSource(selectedSource);
+    setModalDateRange(dateRange);
+    setFilterModalVisible(true);
+  };
+
+  const applyModalFilters = () => {
+    setSelectedType(modalType);
+    setSelectedCategory(modalCategory);
+    setSelectedSource(modalSource);
+    setDateRange(modalDateRange);
+    setFilterModalVisible(false);
+  };
+
+  const resetModalFilters = () => {
+    setModalType('all');
+    setModalCategory('all');
+    setModalSource('all');
+    setModalDateRange({ from: null, to: null });
+  };
+
+  // In modal: category options logic
+  const getModalCategories = () => {
+    if (modalType === 'all') return ALL_CATEGORIES;
+    if (modalType === 'income') return INCOME_CATEGORIES;
+    return EXPENSE_CATEGORIES;
+  };
+
+  // In modal: dropdown style
+  const modalDropdownStyle = { width: '100%', alignSelf: 'flex-start', height: 44, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.background, justifyContent: 'center', marginBottom: 0 };
+
+  // In modal: button style
+  const modalButtonStyle = { flex: 1, minHeight: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 16, paddingHorizontal: 0, paddingVertical: 0 };
+
+  const renderHeader = () => (
+    <View style={{ backgroundColor: theme.colors.background, paddingBottom: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <AppSearchBar
+          onSearch={setSearchQuery}
+          placeholder="Search transactions..."
+          style={{ flex: 1 }}
+        />
+        <AppButton style={{ backgroundColor: theme.colors.accent, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12, elevation: 2 }} onPress={openFilterModal}>
+          <SlidersHorizontal color="#fff" size={20} />
+        </AppButton>
+      </View>
+      <TouchableOpacity onPress={() => setShowSubtotals(v => !v)} activeOpacity={0.85} style={{ marginBottom: 8, alignItems: 'center' }}>
+        <Animated.Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: 17, letterSpacing: -0.2 }}>
+          {`Showing ${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''} · Total: ₹${Math.abs(getTotalAmount()).toLocaleString()}`}
+        </Animated.Text>
+        {showSubtotals && (
+          <View style={{ flexDirection: 'row', marginTop: 4, gap: 16 }}>
+            {(() => {
+              const { income, expense } = getIncomeExpenseTotals();
+              return <>
+                <Text style={{ color: '#10B981', fontFamily: theme.font.family.bold, fontSize: 14 }}>Income: ₹{income.toLocaleString()}</Text>
+                <Text style={{ color: '#EF4444', fontFamily: theme.font.family.bold, fontSize: 14 }}>Expense: ₹{expense.toLocaleString()}</Text>
+              </>;
+            })()}
+          </View>
+        )}
+      </TouchableOpacity>
+      <Portal>
+        <Modal visible={filterModalVisible} onDismiss={() => setFilterModalVisible(false)} contentContainerStyle={{ backgroundColor: 'transparent' }}>
+          <Surface style={{ backgroundColor: theme.colors.card, borderRadius: 20, padding: 0, marginHorizontal: 16, elevation: 8, shadowOpacity: 0.12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopLeftRadius: 20, borderTopRightRadius: 20, backgroundColor: theme.colors.accent, paddingHorizontal: 20, paddingVertical: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <SlidersHorizontal color="#fff" size={20} />
+                <Text style={{ color: '#fff', fontFamily: theme.font.family.bold, fontSize: 18, fontWeight: '700' }}>Filters</Text>
+              </View>
+              <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
+                <X color="#fff" size={22} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12 }}>
+              {/* Type Chips Row */}
+              <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 6 }}>Type</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                {['all', 'income', 'expense'].map(type => (
+                  <Chip
+                    key={type}
+                    selected={modalType === type}
+                    onPress={() => setModalType(type)}
+                    style={{ backgroundColor: modalType === type ? theme.colors.accent : theme.colors.background, borderRadius: 16, height: 40, minWidth: 80, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border }}
+                    textStyle={{ color: modalType === type ? '#fff' : theme.colors.textMain, fontFamily: theme.font.family.medium, fontSize: 15, textAlign: 'center' }}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Chip>
+                ))}
+              </View>
+              {/* Category Dropdown */}
+              <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 6 }}>Category</Text>
+              <View style={{ marginBottom: 16, width: '100%' }}>
+                <AppDropdown
+                  items={[{ label: 'All Categories', value: 'all' }, ...getModalCategories().map(cat => ({ label: cat, value: cat }))]}
+                  selectedValue={modalCategory}
+                  onValueChange={setModalCategory}
+                  placeholder="Category"
+                  style={modalDropdownStyle}
+                />
+              </View>
+              {/* Source Dropdown */}
+              <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 6 }}>Source</Text>
+              <View style={{ marginBottom: 16, width: '100%' }}>
+                <AppDropdown
+                  items={[{ label: 'All Sources', value: 'all' }, ...accounts.map((account) => ({ label: account.name, value: account.name }))]}
+                  selectedValue={modalSource}
+                  onValueChange={setModalSource}
+                  placeholder="Source"
+                  style={modalDropdownStyle}
+                />
+              </View>
+              {/* Date Range Row */}
+              <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 6 }}>Date Range</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20, justifyContent: 'center' }}>
+                <TouchableOpacity onPress={() => { setShowModalDatePicker(true); setModalDatePickerMode('from'); }} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.background, borderRadius: 16, paddingHorizontal: 16, height: 40, borderWidth: 1, borderColor: theme.colors.border, minWidth: 110, justifyContent: 'center' }}>
+                  <Calendar color={theme.colors.textSubtle} size={18} />
+                  <Text style={{ color: theme.colors.textMain, marginLeft: 6, fontFamily: theme.font.family.medium, fontSize: 15 }}>
+                    {modalDateRange.from ? new Date(modalDateRange.from).toLocaleDateString() : 'From'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { setShowModalDatePicker(true); setModalDatePickerMode('to'); }} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.background, borderRadius: 16, paddingHorizontal: 16, height: 40, borderWidth: 1, borderColor: theme.colors.border, minWidth: 110, justifyContent: 'center' }}>
+                  <Calendar color={theme.colors.textSubtle} size={18} />
+                  <Text style={{ color: theme.colors.textMain, marginLeft: 6, fontFamily: theme.font.family.medium, fontSize: 15 }}>
+                    {modalDateRange.to ? new Date(modalDateRange.to).toLocaleDateString() : 'To'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {showModalDatePicker && (
+                <DateTimePicker
+                  value={modalDateRange[modalDatePickerMode] ? new Date(modalDateRange[modalDatePickerMode]) : new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setShowModalDatePicker(false);
+                    if (selectedDate) {
+                      setModalDateRange(prev => ({ ...prev, [modalDatePickerMode]: selectedDate }));
+                    }
+                  }}
+                />
+              )}
+              {/* Action Row */}
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 0, justifyContent: 'center', width: '100%' }}>
+                <AppButton style={{ ...modalButtonStyle, backgroundColor: theme.colors.accent, elevation: 2 }} onPress={applyModalFilters}>
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15, textAlign: 'center' }}>Apply</Text>
+                </AppButton>
+                <AppButton style={{ ...modalButtonStyle, backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.border, elevation: 0 }} onPress={resetModalFilters}>
+                  <Text style={{ color: theme.colors.textMain, fontWeight: '700', fontSize: 15, textAlign: 'center' }}>Reset</Text>
+                </AppButton>
+              </View>
+            </View>
+          </Surface>
+        </Modal>
+      </Portal>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
-      
-      {/* Header */}
       <View style={{ paddingTop: 60, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <AppButton
@@ -169,89 +500,18 @@ const HistoryScreen = ({ navigation }) => {
           <View style={{ width: 40 }} />
         </View>
       </View>
-
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Search Bar */}
-        <View style={styles.searchSection}>
-          <Searchbar
-            placeholder="Search transactions..."
-            onChangeText={setSearchQuery}
-            value={searchQuery}
-            style={styles.searchBar}
-            iconColor={theme.colors.textSubtle}
-            inputStyle={styles.searchInput}
-            placeholderTextColor={theme.colors.textHelper}
-          />
-        </View>
-
-
-        {/* Filters */}
-        <View style={styles.filtersSection}>
-          <Text style={styles.sectionTitle}>Filters</Text>
-          
-          {/* Type Filter */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Type</Text>
-            <AppSegmentedButton
-              items={['All', 'Income', 'Expense']}
-              selectedIndex={selectedType === 'all' ? 0 : selectedType === 'income' ? 1 : 2}
-              onSelect={(index) => setSelectedType(index === 0 ? 'all' : index === 1 ? 'income' : 'expense')}
-            />
-          </View>
-
-          {/* Source Filter */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Source</Text>
-            <AppDropdown
-              items={[{ label: 'All Sources', value: 'all' }, ...accounts.map((account) => ({ label: account.name, value: account.name }))]}
-              selectedValue={selectedSource}
-              onValueChange={setSelectedSource}
-              placeholder="Select source"
-              style={{ marginBottom: theme.spacing.lg }}
-            />
-          </View>
-        </View>
-
-        {/* Summary */}
-        <View style={styles.summarySection}>
-          <Surface style={styles.summaryCard}>
-            <LinearGradient
-              colors={['rgba(59, 130, 246, 0.1)', 'rgba(37, 99, 235, 0.05)']}
-              style={styles.summaryGradient}
-            >
-              <Text style={styles.summaryLabel}>Filtered Total</Text>
-              <Text style={styles.summaryAmount}>
-                {formatCurrency(Math.abs(getTotalAmount()))}
-              </Text>
-              <Text style={styles.summaryType}>
-                {getTotalAmount() >= 0 ? 'Net Income' : 'Net Expense'}
-              </Text>
-            </LinearGradient>
-          </Surface>
-        </View>
-
-        {/* Transactions */}
-        <View style={styles.transactionsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {filteredTransactions.length} Transaction{filteredTransactions.length !== 1 ? 's' : ''}
-            </Text>
-          </View>
-
-          {filteredTransactions.length === 0 ? (
-            <Surface style={styles.emptyCard}>
-              <Text style={styles.emptyIcon}>📝</Text>
-              <Text style={styles.emptyTitle}>No transactions found</Text>
-              <Text style={styles.emptyText}>
-                Try adjusting your search or filters
-              </Text>
-            </Surface>
-          ) : (
-            filteredTransactions.map((transaction, index) => (
+      <FlatList
+        data={monthSections}
+        keyExtractor={section => section.title}
+        ListHeaderComponent={renderHeader}
+        stickyHeaderIndices={[0]}
+        renderItem={({ item: section }) => (
+          <View key={section.title} style={{ marginBottom: 24 }}>
+            <TouchableOpacity onPress={() => toggleMonth(section.title)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 8 }}>
+              <Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: 16 }}>{new Date(section.title + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })}</Text>
+              <Text style={{ color: theme.colors.textSubtle, fontSize: 14 }}>{collapsedMonths[section.title] ? '▼' : '▲'}</Text>
+            </TouchableOpacity>
+            {!collapsedMonths[section.title] && section.data.map((transaction, index) => (
               <Surface key={transaction.id || transaction.title + '-' + index} style={styles.transactionCard}>
                 <View style={styles.transactionRow}>
                   <View style={styles.transactionIcon}>
@@ -260,7 +520,6 @@ const HistoryScreen = ({ navigation }) => {
                       return <Icon color={getCategoryColor(transaction.category)} size={22} />;
                     })()}
                   </View>
-                  
                   <View style={styles.transactionDetails}>
                     <View style={styles.transactionHeader}>
                       <Text style={styles.transactionTitle}>
@@ -285,7 +544,6 @@ const HistoryScreen = ({ navigation }) => {
                         <Trash2 color={theme.colors.error} size={18} />
                       </TouchableOpacity>
                     </View>
-                    
                     <View style={styles.transactionMeta}>
                       <Text style={styles.transactionCategory}>
                         {transaction.category}
@@ -294,7 +552,6 @@ const HistoryScreen = ({ navigation }) => {
                         {formatDate(transaction.date)}
                       </Text>
                     </View>
-                    
                     <View style={styles.transactionFooter}>
                       <Text style={styles.transactionSource}>
                         {transaction.source}
@@ -308,10 +565,38 @@ const HistoryScreen = ({ navigation }) => {
                   </View>
                 </View>
               </Surface>
-            ))
-          )}
-        </View>
-      </ScrollView>
+            ))}
+            {!collapsedMonths[section.title] && section.hasMore && (
+              <AppButton style={{ marginTop: 8, alignSelf: 'center', backgroundColor: theme.colors.accent, borderRadius: 8, paddingHorizontal: 24, paddingVertical: 10 }} onPress={() => loadMoreMonth(section.title)}>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Load More</Text>
+              </AppButton>
+            )}
+          </View>
+        )}
+        ListEmptyComponent={
+          <Surface style={styles.emptyCard}>
+            <Text style={styles.emptyIcon}>📝</Text>
+            <Text style={styles.emptyTitle}>No transactions found</Text>
+            <Text style={styles.emptyText}>
+              Try adjusting your search or filters
+            </Text>
+          </Surface>
+        }
+        contentContainerStyle={styles.scrollContent}
+      />
+      {showDatePicker && (
+        <DateTimePicker
+          value={dateRange[datePickerMode] ? new Date(dateRange[datePickerMode]) : new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, selectedDate) => {
+            setShowDatePicker(false);
+            if (selectedDate) {
+              setDateRange(prev => ({ ...prev, [datePickerMode]: selectedDate }));
+            }
+          }}
+        />
+      )}
     </View>
   );
 };
@@ -382,42 +667,8 @@ const styles = StyleSheet.create({
     fontSize: theme.font.size.body,
     color: theme.colors.textMain,
   },
-  filtersSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#F9FAFB',
-    marginBottom: 16,
-    letterSpacing: -0.3,
-  },
-  filterGroup: {
-    marginBottom: 16,
-  },
-  filterLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#94A3B8',
-    marginBottom: 8,
-    letterSpacing: 0.2,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  chip: {
-    marginRight: 8,
-    borderRadius: 8,
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  chipText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#F9FAFB',
-    letterSpacing: 0.2,
+  stickyFilters: {
+    padding: 12,
   },
   summarySection: {
     marginBottom: 24,
