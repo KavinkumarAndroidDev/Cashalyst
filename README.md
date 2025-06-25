@@ -52,8 +52,7 @@ A simple yet powerful personal finance tracking app built with React Native and 
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd Cashalyst
+   git clone https://github.com/KavinkumarAndroidDev/Cashalyst
    ```
 
 2. **Install dependencies**
@@ -146,7 +145,7 @@ The app comes with three default accounts:
 - [ ] Budget setting and tracking
 - [ ] Recurring transaction setup
 - [ ] Export data to CSV/PDF
-- [ ] Dark mode support
+- [ ] Dark and Light mode support
 - [ ] Cloud sync with Google Drive
 - [ ] Multiple currency support
 - [ ] Bill reminders
