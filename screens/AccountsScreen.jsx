@@ -17,6 +17,7 @@ import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
 import { ArrowLeft, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, CreditCard, Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const AccountsScreen = ({ navigation }) => {
   const { accounts, addAccount, updateAccount, deleteAccount, getStats } = useStore();

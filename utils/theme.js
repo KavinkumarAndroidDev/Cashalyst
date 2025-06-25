@@ -1,6 +1,8 @@
 // Global Design System for Cashalyst
 // Use this for all colors, fonts, spacing, radii, shadows, and reusable component styles
 
+import { responsiveFontSize, moderateScale } from './scale';
+
 const colors = {
   background: '#0F172A',
   card: '#1E293B',
@@ -26,33 +28,33 @@ const font = {
     bold: 'Inter_700Bold',
   },
   size: {
-    title: 28,
-    section: 20,
-    label: 16,
-    body: 14,
-    amount: 22,
-    note: 12,
+    title: responsiveFontSize(28),
+    section: responsiveFontSize(20),
+    label: responsiveFontSize(16),
+    body: responsiveFontSize(14),
+    amount: responsiveFontSize(22),
+    note: responsiveFontSize(12),
   },
   weight: {
     medium: '600',
     bold: '700',
   },
   lineHeight: {
-    title: 36,
-    section: 26,
-    label: 20,
-    body: 18,
-    amount: 28,
-    note: 16,
+    title: moderateScale(36),
+    section: moderateScale(26),
+    label: moderateScale(20),
+    body: moderateScale(18),
+    amount: moderateScale(28),
+    note: moderateScale(16),
   },
 };
 
 const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
+  xs: moderateScale(4),
+  sm: moderateScale(8),
+  md: moderateScale(16),
+  lg: moderateScale(24),
+  xl: moderateScale(32),
 };
 
 const radii = {
@@ -80,7 +82,7 @@ const shadow = {
 
 // Reusable component styles
 const input = {
-  height: 52,
+  height: moderateScale(52),
   borderRadius: radii.input,
   borderWidth: 1,
   borderColor: colors.border,
@@ -96,7 +98,7 @@ const button = {
   filled: {
     backgroundColor: colors.accent,
     borderRadius: radii.button,
-    height: 52,
+    height: moderateScale(52),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.shadow,
@@ -110,14 +112,14 @@ const button = {
     borderColor: colors.accent,
     borderWidth: 1,
     borderRadius: radii.button,
-    height: 52,
+    height: moderateScale(52),
     alignItems: 'center',
     justifyContent: 'center',
   },
   text: {
     backgroundColor: 'transparent',
     borderRadius: radii.button,
-    height: 40,
+    height: moderateScale(40),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -147,7 +149,7 @@ const card = {
 };
 
 const icon = {
-  size: 22,
+  size: moderateScale(22),
   color: colors.textMain,
 };
 

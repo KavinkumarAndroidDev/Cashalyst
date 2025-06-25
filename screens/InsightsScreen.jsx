@@ -11,6 +11,7 @@ import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 import useStore from '../hooks/useStore';
 import { formatCurrency } from '../utils/formatCurrency';
 import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 import {
   ArrowLeft,
   TrendingUp,
@@ -303,27 +304,21 @@ const InsightsScreen = ({ navigation }) => {
         </Surface>
         {/* Summary Cards */}
         <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.lg, marginBottom: 8 }}>Overview ({periods.find(p=>p.value===selectedPeriod).label})</Text>
-        <View style={{ flexDirection: 'row', gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
-          <Surface style={theme.card}>
-            <View style={{ alignItems: 'center', padding: theme.spacing.md }}>
-              <TrendingUp color={theme.colors.accent} size={20} style={{ marginBottom: 8 }} />
-              <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 4 }}>{formatCurrency(overview.income)}</Text>
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textSubtle }}>Income</Text>
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
+          <Surface style={[theme.card, { flex: 1, alignItems: 'center', padding: theme.spacing.md  }]}> //marginRight: theme.spacing.md
+            <TrendingUp color={theme.colors.accent} size={18} style={{ marginBottom: 4 }} />
+            <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.income)}</Text>
+            <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Income</Text>
           </Surface>
-          <Surface style={theme.card}>
-            <View style={{ alignItems: 'center', padding: theme.spacing.md }}>
-              <TrendingDown color={theme.colors.error} size={20} style={{ marginBottom: 8 }} />
-              <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 4 }}>{formatCurrency(overview.expense)}</Text>
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textSubtle }}>Expenses</Text>
-            </View>
+          <Surface style={[theme.card, { flex: 1, alignItems: 'center', padding: theme.spacing.md  }]}> 
+            <TrendingDown color={theme.colors.error} size={18} style={{ marginBottom: 4 }} />
+            <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.expense)}</Text>
+            <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Expenses</Text>
           </Surface>
-          <Surface style={theme.card}>
-            <View style={{ alignItems: 'center', padding: theme.spacing.md }}>
-              <PiggyBank color={theme.colors.success} size={20} style={{ marginBottom: 8 }} />
-              <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 4 }}>{formatCurrency(overview.savings)}</Text>
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textSubtle }}>Savings</Text>
-            </View>
+          <Surface style={[theme.card, { flex: 1, alignItems: 'center', padding: theme.spacing.md }]}> 
+            <PiggyBank color={theme.colors.textSubtle} size={18} style={{ marginBottom: 4 }} />
+            <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.savings)}</Text>
+            <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Savings</Text>
           </Surface>
         </View>
         {/* Trend Chart */}
@@ -331,27 +326,40 @@ const InsightsScreen = ({ navigation }) => {
         <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}> {/* Chart container */}
           {trendData.labels.length > 0 &&
             trendData.datasets.every(ds => isValidDataArray(ds.data)) ? (
-            <LineChart
-              data={trendData}
-              width={width - theme.spacing.lg * 2 - 20}
-              height={220}
-              chartConfig={{
-                backgroundColor: theme.colors.card,
-                backgroundGradientFrom: theme.colors.card,
-                backgroundGradientTo: theme.colors.card,
-                decimalPlaces: 0,
-                color: (opacity = 1) => theme.colors.textMain,
-                labelColor: (opacity = 1) => theme.colors.textSubtle,
-                style: { borderRadius: theme.radii.card },
-                propsForDots: {
-                  r: '6',
-                  strokeWidth: '2',
-                  stroke: theme.colors.accent,
-                },
-              }}
-              bezier
-              style={{ marginVertical: 8, borderRadius: theme.radii.card }}
-            />
+            <>
+              <LineChart
+                data={trendData}
+                width={width - theme.spacing.lg * 2 - 20}
+                height={220}
+                chartConfig={{
+                  backgroundColor: theme.colors.card,
+                  backgroundGradientFrom: theme.colors.card,
+                  backgroundGradientTo: theme.colors.card,
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => theme.colors.textMain,
+                  labelColor: (opacity = 1) => theme.colors.textSubtle,
+                  style: { borderRadius: theme.radii.card },
+                  propsForDots: {
+                    r: '6',
+                    strokeWidth: '2',
+                    stroke: theme.colors.accent,
+                  },
+                }}
+                bezier
+                style={{ marginVertical: 8, borderRadius: theme.radii.card }}
+              />
+              {/* Legend for trend chart */}
+              <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
+                  <View style={{ width: 16, height: 4, borderRadius: 2, backgroundColor: 'rgba(16, 185, 129, 1)', marginRight: 6 }} />
+                  <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textMain }}>Income</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ width: 16, height: 4, borderRadius: 2, backgroundColor: 'rgba(239, 68, 68, 1)', marginRight: 6 }} />
+                  <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textMain }}>Expenses</Text>
+                </View>
+              </View>
+            </>
           ) : (
             <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
               <FileText color={theme.colors.textSubtle} size={48} style={{ marginBottom: 16 }} />

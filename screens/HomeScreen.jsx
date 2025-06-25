@@ -16,6 +16,8 @@ import { CreditCard, TrendingUp, TrendingDown, PlusCircle, List, BarChart2, Wall
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
+import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const { width } = Dimensions.get('window');
 

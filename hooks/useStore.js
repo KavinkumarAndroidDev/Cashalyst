@@ -39,25 +39,38 @@ const useStore = create((set, get) => ({
   // Add transaction
   addTransaction: async (transactionData) => {
     set({ loading: true, error: null });
+    const prevTransactions = get().transactions;
+    const prevAccounts = get().accounts;
     try {
       const transaction = {
         id: generateId(),
         date: getCurrentDate(),
         ...transactionData
       };
-      
+      // Optimistically update UI
+      let newTransactions = [transaction, ...prevTransactions];
+      let newAccounts = prevAccounts.map(acc => {
+        if (acc.name === transaction.source) {
+          const balanceChange = transaction.type === 'income' ? transaction.amount : -transaction.amount;
+          return { ...acc, balance: acc.balance + balanceChange };
+        }
+        return acc;
+      });
+      set({ transactions: newTransactions, accounts: newAccounts });
+      // Persist to storage
       await addTransaction(transaction);
-      
-      // Reload data
-      await get().loadTransactions();
-      await get().loadAccounts();
-      await get().loadMonthlyStats();
-      await get().loadCategoryStats();
-      
+      // Batch reload all data in parallel
+      await Promise.all([
+        get().loadTransactions(),
+        get().loadAccounts(),
+        get().loadMonthlyStats(),
+        get().loadCategoryStats()
+      ]);
       set({ loading: false });
       return transaction;
     } catch (error) {
-      set({ error: error.message, loading: false });
+      // Revert optimistic update
+      set({ transactions: prevTransactions, accounts: prevAccounts, error: error.message, loading: false });
       throw error;
     }
   },
@@ -65,18 +78,35 @@ const useStore = create((set, get) => ({
   // Delete transaction
   deleteTransaction: async (id) => {
     set({ loading: true, error: null });
+    const prevTransactions = get().transactions;
+    const prevAccounts = get().accounts;
     try {
+      // Find transaction to delete
+      const transaction = prevTransactions.find(t => t.id === id);
+      if (!transaction) throw new Error('Transaction not found');
+      // Optimistically update UI
+      let newTransactions = prevTransactions.filter(t => t.id !== id);
+      let newAccounts = prevAccounts.map(acc => {
+        if (acc.name === transaction.source) {
+          const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
+          return { ...acc, balance: acc.balance + balanceChange };
+        }
+        return acc;
+      });
+      set({ transactions: newTransactions, accounts: newAccounts });
+      // Persist to storage
       await deleteTransaction(id);
-      
-      // Reload data
-      await get().loadTransactions();
-      await get().loadAccounts();
-      await get().loadMonthlyStats();
-      await get().loadCategoryStats();
-      
+      // Batch reload all data in parallel
+      await Promise.all([
+        get().loadTransactions(),
+        get().loadAccounts(),
+        get().loadMonthlyStats(),
+        get().loadCategoryStats()
+      ]);
       set({ loading: false });
     } catch (error) {
-      set({ error: error.message, loading: false });
+      // Revert optimistic update
+      set({ transactions: prevTransactions, accounts: prevAccounts, error: error.message, loading: false });
       throw error;
     }
   },
@@ -228,16 +258,45 @@ const useStore = create((set, get) => ({
   // Update transaction
   updateTransaction: async (id, updatedData) => {
     set({ loading: true, error: null });
+    const prevTransactions = get().transactions;
+    const prevAccounts = get().accounts;
     try {
+      // Optimistically update UI
+      let transactionIndex = prevTransactions.findIndex(t => t.id === id);
+      if (transactionIndex === -1) throw new Error('Transaction not found');
+      const oldTransaction = prevTransactions[transactionIndex];
+      const newTransaction = { ...oldTransaction, ...updatedData, id };
+      // Update transactions array
+      let newTransactions = [...prevTransactions];
+      newTransactions[transactionIndex] = newTransaction;
+      // Update accounts array
+      let newAccounts = prevAccounts.map(acc => {
+        if (acc.name === oldTransaction.source) {
+          // Reverse old transaction effect
+          const reverse = oldTransaction.type === 'income' ? -oldTransaction.amount : oldTransaction.amount;
+          acc = { ...acc, balance: acc.balance + reverse };
+        }
+        if (acc.name === newTransaction.source) {
+          // Apply new transaction effect
+          const apply = newTransaction.type === 'income' ? newTransaction.amount : -newTransaction.amount;
+          acc = { ...acc, balance: acc.balance + apply };
+        }
+        return acc;
+      });
+      set({ transactions: newTransactions, accounts: newAccounts });
+      // Persist to storage
       await require('../db/asyncStorageService').updateTransaction(id, updatedData);
-      // Reload data
-      await get().loadTransactions();
-      await get().loadAccounts();
-      await get().loadMonthlyStats();
-      await get().loadCategoryStats();
+      // Batch reload all data in parallel
+      await Promise.all([
+        get().loadTransactions(),
+        get().loadAccounts(),
+        get().loadMonthlyStats(),
+        get().loadCategoryStats()
+      ]);
       set({ loading: false });
     } catch (error) {
-      set({ error: error.message, loading: false });
+      // Revert optimistic update
+      set({ transactions: prevTransactions, accounts: prevAccounts, error: error.message, loading: false });
       throw error;
     }
   }

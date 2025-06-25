@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const VARIANT_STYLES = {
   filled: theme.button.filled,

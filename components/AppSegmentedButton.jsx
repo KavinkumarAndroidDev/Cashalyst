@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const AppSegmentedButton = ({
   items = [],

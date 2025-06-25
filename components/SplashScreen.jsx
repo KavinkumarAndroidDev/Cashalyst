@@ -3,111 +3,83 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
-const quotes = [
-  "Do not save what is left after spending, but spend what is left after saving." + " – Warren Buffett",
-  "Beware of little expenses; a small leak will sink a great ship." + " – Benjamin Franklin",
-  "Someone's sitting in the shade today because someone planted a tree a long time ago." + " – Warren Buffett",
-  "You can make money two ways — make more, or spend less." + " – John Hope Bryant",
-  "The habit of saving is itself an education..." + " – T.T. Munger",
-  "He who buys what he does not need, steals from himself." + " – Swedish Proverb",
-  "The art is not in making money, but in keeping it." + " – Proverb",
-  "Wealth consists not in having great possessions, but in having few wants." + " – Epictetus",
-  "If you would be wealthy, think of saving as well as getting." + " – Benjamin Franklin",
-  "It's not how much money you make, but how much you keep..." + " – Robert Kiyosaki",
-  "A penny saved is a penny earned." + " – Benjamin Franklin",
-  "You must learn to save first and spend afterwards." + " – John Poole",
-  "The easiest way to save money is to waste less energy." + " – Barack Obama",
-  "Never spend your money before you have earned it." + " – Thomas Jefferson",
-  "He who will not economize will have to agonize." + " – Confucius",
-  "Money is a terrible master but an excellent servant." + " – P.T. Barnum",
-  "Save money and money will save you." + " – Unknown",
-  "Being in control of your finances is a great stress reliever." + " – Unknown",
-  "Spend not where you may save; spare not where you must spend." + " – John Ray",
-  "Saving must become a priority, not just a thought..." + " – Dave Ramsey",
-  // 11 new, unique quotes below
-  "Financial freedom is available to those who learn about it and work for it." + " – Robert Kiyosaki",
-  "Do not go broke trying to look rich." + " – Unknown",
-  "Wealth is the ability to fully experience life." + " – Henry David Thoreau",
-  "The lack of money is the root of all evil." + " – Mark Twain",
-  "Do not tell me where your priorities are. Show me where you spend your money and I’ll tell you what they are." + " – James W. Frick",
-  "It’s not your salary that makes you rich, it’s your spending habits." + " – Charles A. Jaffe",
-  "Try to save something while your salary is small; it’s impossible to save after you begin to earn more." + " – Jack Benny",
-  "Richness is not about what you have, but what you can give." + " – Unknown",
-  "The real measure of your wealth is how much you’d be worth if you lost all your money." + " – Unknown",
-  "A budget is telling your money where to go instead of wondering where it went." + " – John C. Maxwell",
-  "Too many people spend money they haven't earned, to buy things they don't want, to impress people they don't like." + " – Will Rogers"
+const QUOTES = [
+  { text: "A penny saved is a penny earned.", author: "Benjamin Franklin" },
+  { text: "Wealth consists not in having great possessions, but in having few wants.", author: "Epictetus" },
+  { text: "Do not save what is left after spending, but spend what is left after saving.", author: "Warren Buffett" },
+  { text: "Beware of little expenses; a small leak will sink a great ship.", author: "Benjamin Franklin" },
+  { text: "The art is not in making money, but in keeping it.", author: "Proverb" },
+  { text: "It's not how much money you make, but how much you keep.", author: "Robert Kiyosaki" },
+  { text: "Save money and money will save you.", author: "Unknown" },
+  { text: "Financial freedom is available to those who learn about it and work for it.", author: "Robert Kiyosaki" },
+
+  // 31 new, unique, concise quotes
+  { text: "Never spend your money before you have earned it.", author: "Thomas Jefferson" },
+  { text: "He who buys what he does not need, steals from himself.", author: "Swedish Proverb" },
+  { text: "The habit of saving is itself an education.", author: "T.T. Munger" },
+  { text: "You must gain control over your money or the lack of it will forever control you.", author: "Dave Ramsey" },
+  { text: "Money is a terrible master but an excellent servant.", author: "P.T. Barnum" },
+  { text: "A budget is telling your money where to go instead of wondering where it went.", author: "John C. Maxwell" },
+  { text: "Try to save something while your salary is small; it’s impossible to save after you begin to earn more.", author: "Jack Benny" },
+  { text: "Richness is not about what you have, but what you can give.", author: "Unknown" },
+  { text: "The real measure of your wealth is how much you’d be worth if you lost all your money.", author: "Unknown" },
+  { text: "It’s not your salary that makes you rich, it’s your spending habits.", author: "Charles A. Jaffe" },
+  { text: "He who will not economize will have to agonize.", author: "Confucius" },
+  { text: "If you would be wealthy, think of saving as well as getting.", author: "Benjamin Franklin" },
+  { text: "Being in control of your finances is a great stress reliever.", author: "Unknown" },
+  { text: "Spend not where you may save; spare not where you must spend.", author: "John Ray" },
+  { text: "The lack of money is the root of all evil.", author: "Mark Twain" },
+  { text: "Do not go broke trying to look rich.", author: "Unknown" },
+  { text: "Too many people spend money they haven't earned, to buy things they don't want, to impress people they don't like.", author: "Will Rogers" },
+  { text: "A simple fact that is hard to learn is that the time to save money is when you have some.", author: "Joe Moore" },
+  { text: "Money looks better in the bank than on your feet.", author: "Sophia Amoruso" },
+  { text: "Wealth is the ability to fully experience life.", author: "Henry David Thoreau" },
+  { text: "You can make money two ways — make more, or spend less.", author: "John Hope Bryant" },
+  { text: "The easiest way to save money is to waste less energy.", author: "Barack Obama" },
+  { text: "You must learn to save first and spend afterwards.", author: "John Poole" },
+  { text: "Saving must become a priority, not just a thought.", author: "Dave Ramsey" },
+  { text: "Money grows on the tree of persistence.", author: "Japanese Proverb" },
+  { text: "Do not tell me where your priorities are. Show me where you spend your money and I’ll tell you what they are.", author: "James W. Frick" },
+  { text: "If saving money is wrong, I don’t want to be right.", author: "William Shatner" },
+  { text: "The quickest way to double your money is to fold it in half and put it back in your pocket.", author: "Will Rogers" },
+  { text: "A wise person should have money in their head, but not in their heart.", author: "Jonathan Swift" },
+  { text: "Don’t tell me what you value, show me your budget, and I’ll tell you what you value.", author: "Joe Biden" },
+  { text: "Opportunity is missed by most people because it is dressed in overalls and looks like work.", author: "Thomas Edison" },
+  { text: "Small daily savings add up to big money.", author: "Unknown" }
 ];
 
 
 const SplashScreen = ({ onFinish }) => {
-  const [currentQuote, setCurrentQuote] = useState('');
+  const [quote, setQuote] = useState(QUOTES[0]);
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(30));
   const [logoAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
-    const getQuoteForToday = async () => {
-      try {
-        const today = new Date().toDateString();
-        const storedDate = await AsyncStorage.getItem('last_quote_date');
-        const storedQuoteIndex = await AsyncStorage.getItem('last_quote_index');
-        
-        let quoteIndex;
-        if (storedDate === today && storedQuoteIndex !== null) {
-          // Use the same quote for today
-          quoteIndex = parseInt(storedQuoteIndex);
-        } else {
-          // Generate new quote for new day
-          quoteIndex = Math.floor(Math.random() * quotes.length);
-          await AsyncStorage.setItem('last_quote_date', today);
-          await AsyncStorage.setItem('last_quote_index', quoteIndex.toString());
-        }
-        
-        setCurrentQuote(quotes[quoteIndex]);
-      } catch (error) {
-        // Fallback to random quote if storage fails
-        const randomIndex = Math.floor(Math.random() * quotes.length);
-        setCurrentQuote(quotes[randomIndex]);
-      }
-    };
-
-    getQuoteForToday();
+    // Pick a random quote
+    const randomIndex = Math.floor(Math.random() * QUOTES.length);
+    setQuote(QUOTES[randomIndex]);
   }, []);
 
   useEffect(() => {
-    // Animate logo first
     Animated.timing(logoAnim, {
       toValue: 1,
-      duration: 800,
+      duration: 900,
       useNativeDriver: true,
     }).start();
-
-    if (currentQuote) {
-      // Animate in the quote after a shorter delay
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim, {
-            toValue: 0,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }, 300);
-
-      // Auto-finish after 2.5 seconds (reduced from 3.5)
-      const timer = setTimeout(() => {
-        onFinish();
-      }, 2500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [currentQuote, fadeAnim, slideAnim, logoAnim, onFinish]);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1200,
+      delay: 500,
+      useNativeDriver: true,
+    }).start();
+    // Auto-finish after 2.8 seconds
+    const timer = setTimeout(() => {
+      onFinish();
+    }, 2800);
+    return () => clearTimeout(timer);
+  }, [onFinish]);
 
   return (
     <View style={styles.container}>
@@ -115,64 +87,28 @@ const SplashScreen = ({ onFinish }) => {
         colors={['#0F172A', '#1E293B']}
         style={styles.background}
       >
-        <View style={styles.content}>
-          {/* Quote Section - Top */}
-          <Animated.View 
-            style={[
-              styles.quoteContainer,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              }
-            ]}
-          >
-            <View style={styles.quoteCard}>
-              <Text style={styles.quoteLabel}>💬 "Quote of the Day"</Text>
-              <Text style={styles.quoteText}>{currentQuote}</Text>
-            </View>
+        <View style={styles.centerContent}>
+          {/* Logo */}
+          <Animated.View style={{
+            opacity: logoAnim,
+            transform: [{ scale: logoAnim }],
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Text style={styles.logo}>Cashalyst</Text>
           </Animated.View>
-          
-          {/* Logo Section - Center */}
-          <Animated.View 
-            style={[
-              styles.logoContainer,
-              {
-                opacity: logoAnim,
-                transform: [{ scale: logoAnim }],
-              }
-            ]}
-          >
-            <View style={styles.logoCard}>
-              <LinearGradient
-                colors={["rgba(59, 130, 246, 0.18)", "rgba(37, 99, 235, 0.08)"]}
-                style={styles.logoGradient}
-              >
-                <Text style={styles.logo}>Cashalyst</Text>
-                <Text style={styles.tagline}>Smart Money Management</Text>
-              </LinearGradient>
-            </View>
+          {/* Quote with icon and attribution */}
+          <Animated.View style={{ opacity: fadeAnim, marginTop: 36, alignItems: 'center' }}>
+            <Text style={styles.quoteIcon}>❝</Text>
+            <Text style={styles.quoteText} numberOfLines={2} ellipsizeMode="tail">{quote.text}</Text>
+            <Text style={styles.quoteAuthor}>— {quote.author}</Text>
           </Animated.View>
-
-          {/* Progress Bar Section */}
-          <Animated.View 
-            style={[
-              styles.progressContainer,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              }
-            ]}
-          >
+          {/* Progress bar */}
+          <Animated.View style={{ opacity: fadeAnim, marginTop: 48 }}>
             <View style={styles.progressBar}>
               <View style={styles.progressFill} />
             </View>
-            <Text style={styles.progressText}>Loading… 55%</Text>
           </Animated.View>
-
-          {/* Version Text */}
-          <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>v1.4.0</Text>
-          </View>
         </View>
       </LinearGradient>
     </View>
@@ -186,113 +122,55 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
   },
-  content: {
+  centerContent: {
     flex: 1,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 120,
-    paddingBottom: 60,
-  },
-  logoContainer: {
-    alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-  },
-  logoCard: {
-    borderRadius: theme.radii.card,
-    overflow: 'hidden',
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  logoGradient: {
-    paddingHorizontal: 48,
-    paddingVertical: 40,
     alignItems: 'center',
-    borderRadius: theme.radii.card,
+    paddingHorizontal: 24,
   },
   logo: {
-    fontSize: 42,
+    color: theme.colors.accent,
     fontFamily: theme.font.family.bold,
-    color: theme.colors.textMain,
-    marginBottom: 8,
-    letterSpacing: -0.5,
-  },
-  tagline: {
-    fontSize: theme.font.size.body,
-    fontFamily: theme.font.family.regular,
-    color: theme.colors.textSubtle,
-    letterSpacing: 0.5,
-  },
-  quoteContainer: {
-    width: '100%',
-    marginBottom: 40,
-  },
-  quoteCard: {
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radii.card,
-    padding: theme.spacing.xl,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  quoteLabel: {
-    fontSize: theme.font.size.label,
-    fontFamily: theme.font.family.medium,
-    color: theme.colors.textSubtle,
+    fontSize: theme.font.size.title,
+    letterSpacing: 1.5,
     textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: 0.5,
+  },
+  quoteIcon: {
+    fontSize: 32,
+    color: theme.colors.textMain,
+    marginBottom: 2,
+    textAlign: 'center',
   },
   quoteText: {
-    fontSize: theme.font.size.body,
-    fontFamily: theme.font.family.medium,
     color: theme.colors.textMain,
-    textAlign: 'center',
-    lineHeight: theme.font.lineHeight.body + 4,
+    fontFamily: theme.font.family.medium,
+    fontSize: theme.font.size.label,
     fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 0,
+    marginBottom: 0,
+    lineHeight: theme.font.lineHeight.body,
+    maxWidth: 320,
   },
-  versionContainer: {
-    alignItems: 'center',
-  },
-  versionText: {
-    fontSize: 10,
-    fontFamily: theme.font.family.regular,
-    color: theme.colors.textHelper,
-    letterSpacing: 0.5,
-  },
-  progressContainer: {
-    width: '100%',
-    marginBottom: 40,
+  quoteAuthor: {
+    color: theme.colors.textSubtle,
+    fontFamily: theme.font.family.medium,
+    fontSize: theme.font.size.note,
+    marginTop: 4,
+    textAlign: 'center',
   },
   progressBar: {
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radii.button,
-    height: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: 12,
+    width: 120,
+    height: 6,
+    backgroundColor: theme.colors.input,
+    borderRadius: 8,
     overflow: 'hidden',
   },
   progressFill: {
-    backgroundColor: theme.colors.accent,
-    height: '100%',
     width: '55%',
-    borderRadius: theme.radii.button,
-  },
-  progressText: {
-    fontSize: theme.font.size.label,
-    fontFamily: theme.font.family.medium,
-    color: theme.colors.textSubtle,
-    textAlign: 'center',
-    letterSpacing: 0.5,
+    height: '100%',
+    backgroundColor: theme.colors.accent,
+    borderRadius: 8,
   },
 });
 

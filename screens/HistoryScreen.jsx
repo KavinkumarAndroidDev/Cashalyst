@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppSearchBar from '../components/AppSearchBar';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const CATEGORY_ICONS = {
   'Food & Dining': Utensils,

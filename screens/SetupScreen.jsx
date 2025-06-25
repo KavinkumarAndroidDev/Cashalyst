@@ -22,6 +22,7 @@ import { ArrowLeft, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Cale
 import theme from '../utils/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const { width } = Dimensions.get('window');
 
@@ -138,10 +139,7 @@ const SetupScreen = ({ navigation, route }) => {
         [
           {
             text: 'Get Started',
-            onPress: () => {
-              // Navigate to Main screen
-              navigation.replace('Main');
-            },
+            onPress: () => {}, // No navigation here; handled by onSetupComplete
           },
         ]
       );
@@ -164,75 +162,44 @@ const SetupScreen = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.welcomeIcon}>💸</Text>
+      {/* Onboarding Header */}
+      <View style={styles.headerSection}>
+        {/*<Text style={styles.headerIcon}>💸</Text>*/}
         <Text style={styles.headerTitle}>Welcome to Cashalyst</Text>
-        <Text style={styles.headerSubtitle}>
-          Let's set the starting point!
-        </Text>
+        <Text style={styles.headerSubtitle}>Add your money sources to get started</Text>
       </View>
-
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Instructions */}
-        <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionTitle}>
-            Tell us where you store your money
-          </Text>
-          <Text style={styles.instructionText}>
-            Enter how much money you currently have in each source. Don't worry, you can edit these later anytime.
-          </Text>
-        </View>
-
-        {/* Total Balance Preview */}
-        <Surface style={styles.totalCard}>
-          <LinearGradient
-            colors={['rgba(59, 130, 246, 0.1)', 'rgba(37, 99, 235, 0.05)']}
-            style={styles.totalGradient}
-          >
-            <Text style={styles.totalLabel}>Total Balance</Text>
-            <Text style={styles.totalAmount}>
-              ₹{getTotalBalance().toLocaleString()}
-            </Text>
-          </LinearGradient>
-        </Surface>
-
-        {/* Money Sources */}
+        {/* Money Sources List */}
         <View style={styles.sourcesSection}>
-          <Text style={styles.sectionTitle}>Your Sources</Text>
           {sources.map((source, index) => (
-            <Surface key={source.id || source.name + '-' + index} style={[styles.sourceCard, { marginBottom: theme.spacing.lg, padding: theme.spacing.lg }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Surface key={source.id || source.name + '-' + index} style={styles.sourceCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
                 <View style={styles.sourceInfo}>
                   {(() => {
                     const Icon = CATEGORY_ICONS[source.type] || CreditCard;
                     return <Icon color={CATEGORY_COLORS[source.type] || '#94A3B8'} size={22} style={{ marginRight: 10 }} />;
                   })()}
                   <View style={styles.sourceDetails}>
-                    <Text style={styles.sourceName}>{source.name}</Text>
-                    <Text style={styles.sourceType}>
-                      {sourceTypes[source.type]?.label || 'Custom'}
-                    </Text>
+                    <Text style={styles.sourceName}>{source.name || 'New Source'}</Text>
+                    <Text style={styles.sourceType}>{sourceTypes[source.type]?.label || 'Custom'}</Text>
                   </View>
                 </View>
                 {sources.length > 1 && (
-                  <AppButton
-                    variant="danger"
+                  <TouchableOpacity
                     style={styles.removeButton}
                     onPress={() => removeSource(source.id)}
+                    activeOpacity={0.7}
                   >
                     <Text style={styles.removeButtonText}>×</Text>
-                  </AppButton>
+                  </TouchableOpacity>
                 )}
               </View>
-              <View style={{ marginTop: theme.spacing.md }}>
-                {/* Type Selection */}
-                <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Type</Text>
+              <View style={{ marginBottom: theme.spacing.sm }}>
+                <Text style={styles.label}>Type</Text>
                 <View style={styles.typeGrid}>
                   {Object.entries(sourceTypes).map(([key, type], idx) => {
                     const isSelected = source.type === key;
@@ -243,12 +210,12 @@ const SetupScreen = ({ navigation, route }) => {
                         style={[
                           styles.typeCard,
                           isSelected && styles.typeCardSelected,
-                          { marginRight: idx % 2 === 0 ? 8 : 0, marginBottom: 12, width: '48%' }
+                          { marginRight: idx % 2 === 0 ? 8 : 0, marginBottom: 8, width: '48%' }
                         ]}
                         onPress={() => updateSource(source.id, 'type', key)}
                         activeOpacity={0.85}
                       >
-                        <Icon color={isSelected ? '#fff' : CATEGORY_COLORS[key] || '#94A3B8'} size={24} style={{ marginBottom: 4 }} />
+                        <Icon color={isSelected ? '#fff' : CATEGORY_COLORS[key] || '#94A3B8'} size={20} style={{ marginBottom: 2 }} />
                         <Text style={[styles.typeCardLabel, isSelected && styles.typeCardLabelSelected]}>{type.label}</Text>
                         {isSelected && (
                           <View style={styles.checkmarkCircle}>
@@ -259,17 +226,13 @@ const SetupScreen = ({ navigation, route }) => {
                     );
                   })}
                 </View>
-
-                {/* Source Name */}
-                <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginTop: 16, marginBottom: 8 }}>Source Name</Text>
+                <Text style={styles.label}>Source Name</Text>
                 <AppTextField
                   value={source.name}
                   onChangeText={text => updateSource(source.id, 'name', text)}
                   placeholder="e.g., HDFC Bank, Cash, Paytm"
                 />
-
-                {/* Amount */}
-                <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginTop: 16, marginBottom: 8 }}>Current Balance</Text>
+                <Text style={styles.label}>Current Balance</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={styles.currencySymbol}>₹</Text>
                   <AppTextField
@@ -285,33 +248,29 @@ const SetupScreen = ({ navigation, route }) => {
           ))}
           <AppButton
             variant="primary"
-            style={{ marginTop: theme.spacing.md, marginBottom: theme.spacing.xl, alignSelf: 'center', minWidth: 200 }}
+            style={styles.addSourceButton}
             onPress={addNewSource}
           >
             <Text style={styles.addMoreText}>+ Add Source</Text>
           </AppButton>
         </View>
-
         {/* Privacy Notice */}
         <View style={styles.privacyContainer}>
           <Text style={styles.privacyIcon}>🔒</Text>
-          <Text style={styles.privacyText}>
-            This data stays private — only on your device
-          </Text>
+          <Text style={styles.privacyText}>Your data is private and stored only on your device.</Text>
         </View>
-
-        {/* Start Tracking Button */}
-        <AppButton
-          variant={!canStartTracking() ? "disabled" : "primary"}
-          
-          onPress={handleStartTracking}
-          disabled={loading || !canStartTracking()}
-        >
-          <Text style={styles.startButtonText}>
-            {loading ? 'Setting up...' : 'Start Tracking'}
-          </Text>
-        </AppButton>
       </ScrollView>
+      {/* Start Tracking Button at the bottom */}
+      <View style={styles.startTrackingContainer}>
+        <AppButton
+          variant="filled"
+          style={styles.startTrackingButton}
+          onPress={handleStartTracking}
+          disabled={!canStartTracking() || loading}
+        >
+          <Text style={styles.startTrackingText}>{loading ? 'Setting up...' : 'Start Tracking'}</Text>
+        </AppButton>
+      </View>
     </View>
   );
 };
@@ -319,117 +278,52 @@ const SetupScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
   },
-  header: {
-    paddingTop: 60,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    backgroundColor: '#0F172A',
+  headerSection: {
+    alignItems: 'flex-center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: moderateScale(36),
+    paddingBottom: theme.spacing.md,
   },
-  welcomeIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+  headerIcon: {
+    fontSize: moderateScale(36),
+    marginBottom: theme.spacing.sm,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#F9FAFB',
-    marginBottom: 8,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#94A3B8',
+    fontSize: theme.font.size.section,
+    fontFamily: theme.font.family.bold,
+    color: theme.colors.accent,
+    marginBottom: theme.spacing.xs,
     textAlign: 'center',
     letterSpacing: 0.2,
+  },
+  headerSubtitle: {
+    fontSize: theme.font.size.label,
+    color: theme.colors.textSubtle,
+    textAlign: 'center',
+    marginBottom: theme.spacing.sm,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  instructionsContainer: {
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-    elevation: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  instructionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#F9FAFB',
-    marginBottom: 8,
-    letterSpacing: -0.3,
-  },
-  instructionText: {
-    fontSize: 14,
-    color: '#94A3B8',
-    lineHeight: 20,
-    letterSpacing: 0.2,
-  },
-  totalCard: {
-    marginBottom: 24,
-    borderRadius: 16,
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
-    elevation: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-  },
-  totalGradient: {
-    padding: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  totalLabel: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginBottom: 8,
-    fontWeight: '500',
-    letterSpacing: 0.2,
-  },
-  totalAmount: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#F9FAFB',
-    letterSpacing: -0.5,
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   },
   sourcesSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#F9FAFB',
-    marginBottom: 16,
-    letterSpacing: -0.3,
+    marginBottom: theme.spacing.lg,
   },
   sourceCard: {
-    marginBottom: 12,
-    borderRadius: 16,
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
-    elevation: 0,
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radii.card,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
+    elevation: 2,
   },
   sourceInfo: {
     flexDirection: 'row',
@@ -440,65 +334,45 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sourceName: {
-    fontSize: 16,
+    fontSize: theme.font.size.label,
     fontWeight: '600',
-    color: '#F9FAFB',
+    color: theme.colors.textMain,
     marginBottom: 2,
     letterSpacing: -0.2,
   },
   sourceType: {
-    fontSize: 12,
-    color: '#94A3B8',
+    fontSize: theme.font.size.note,
+    color: theme.colors.textSubtle,
     letterSpacing: 0.2,
   },
   currencySymbol: {
-    fontSize: 16,
+    fontSize: theme.font.size.label,
     fontWeight: '600',
-    color: '#F9FAFB',
+    color: theme.colors.textMain,
     marginRight: 4,
     letterSpacing: 0.2,
   },
   removeButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
+    marginLeft: 'auto',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
   removeButtonText: {
-    color: '#EF4444',
-    fontSize: 18,
+    color: theme.colors.error,
+    fontSize: theme.font.size.label,
     fontWeight: 'bold',
   },
-  addMoreButton: {
-    marginTop: 8,
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-    elevation: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  addMoreIcon: {
-    fontSize: 20,
-    color: '#F9FAFB',
-    marginRight: 8,
-    fontWeight: 'bold',
+  addSourceButton: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    alignSelf: 'center',
+    minWidth: 180,
   },
   addMoreText: {
-    color: '#F9FAFB',
-    fontSize: 16,
+    color: theme.colors.textMain,
+    fontSize: theme.font.size.label,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
@@ -506,41 +380,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    padding: 12,
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.md,
   },
   privacyIcon: {
-    fontSize: 16,
-    marginRight: 8,
+    fontSize: theme.font.size.label,
+    marginRight: theme.spacing.sm,
   },
   privacyText: {
-    fontSize: 14,
-    color: '#94A3B8',
+    fontSize: theme.font.size.body,
+    color: theme.colors.textSubtle,
     textAlign: 'center',
     letterSpacing: 0.2,
   },
-  startButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 16,
-    paddingVertical: 20,
+  startTrackingContainer: {
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.background,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.card,
+  },
+  startTrackingButton: {
+    borderRadius: theme.radii.button,
+    height: moderateScale(52),
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-    elevation: 0,
-    shadowColor: '#000',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.accent,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.12,
     shadowRadius: 12,
+    elevation: 4,
   },
-  startButtonDisabled: {
-    opacity: 0.6,
-    backgroundColor: '#6B7280',
+  startTrackingText: {
+    color: theme.colors.textMain,
+    fontFamily: theme.font.family.bold,
+    fontSize: theme.font.size.label,
   },
-  startButtonText: {
-    color: '#F9FAFB',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+  label: {
+    fontFamily: theme.font.family.medium,
+    fontSize: theme.font.size.label,
+    color: theme.colors.textSubtle,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.xs,
+    textAlign: 'left',
   },
   typeGrid: {
     flexDirection: 'row',

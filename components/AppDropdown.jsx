@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Platform, Text, TouchableOpacity, Modal, ScrollView, FlatList } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const AppDropdown = ({
   selectedValue,

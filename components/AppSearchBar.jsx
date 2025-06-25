@@ -3,6 +3,7 @@ import { View, TextInput, StyleSheet, Keyboard, TouchableOpacity } from 'react-n
 import { Surface } from 'react-native-paper';
 import { X, Search } from 'lucide-react-native';
 import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const AppSearchBar = ({ onSearch, placeholder = 'Search transactions...', style }) => {
   const inputRef = useRef();

@@ -13,6 +13,7 @@ import { Picker } from '@react-native-picker/picker';
 import useStore from '../hooks/useStore';
 import { generateId } from '../utils/formatCurrency';
 import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 import { PlusCircle, ArrowDownCircle, ArrowUpCircle, Calendar, Tag, Wallet, FileText, ArrowLeft } from 'lucide-react-native';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';

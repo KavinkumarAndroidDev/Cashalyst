@@ -19,7 +19,7 @@ import AccountsScreen from './screens/AccountsScreen';
 import EditTransactionScreen from './screens/EditTransactionScreen';
 import 'react-native-gesture-handler';
 import useStore from './hooks/useStore';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as NavigationBar from 'expo-navigation-bar';
 
 
@@ -29,79 +29,81 @@ const Tab = createBottomTabNavigator();
 // Tab Navigator for main app screens
 function MainTabNavigator() {
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let IconComponent;
-          let iconSize = size + 2;
-          if (route.name === 'Home') {
-            IconComponent = Home;
-          } else if (route.name === 'AddTransaction') {
-            IconComponent = PlusCircle;
-          } else if (route.name === 'History') {
-            IconComponent = List;
-          } else if (route.name === 'Insights') {
-            IconComponent = BarChart2;
-          } else if (route.name === 'Accounts') {
-            IconComponent = Wallet;
-          }
-          return <IconComponent color={color} size={iconSize} strokeWidth={focused ? 2.4 : 2} />;
-        },
-        tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: '#94A3B8',
-        tabBarShowLabel: true,
-        tabBarLabelStyle: {
-          fontFamily: 'Inter_600SemiBold',
-          fontSize: 12,
-          marginTop: 0,
-          marginBottom: 4,
-        },
-        tabBarStyle: {
-          backgroundColor: Platform.OS === 'ios' ? 'transparent' : '#1E293B',
-          borderTopWidth: 0,
-          height: 64,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 16,
-          elevation: 8,
-        },
-        headerShown: false,
-        tabBarBackground: () => (
-          <BlurView
-            intensity={40}
-            tint="dark"
-            style={{ flex: 1, backgroundColor: 'rgba(30,41,59,0.92)' }}
-          />
-        ),
-      })}
-    >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen}
-        options={{ title: 'Home' }}
-      />
-      <Tab.Screen 
-        name="AddTransaction" 
-        component={AddTransactionScreen}
-        options={{ title: 'Add' }}
-      />
-      <Tab.Screen 
-        name="History" 
-        component={HistoryScreen}
-        options={{ title: 'History' }}
-      />
-      <Tab.Screen 
-        name="Insights" 
-        component={InsightsScreen}
-        options={{ title: 'Insights' }}
-      />
-      <Tab.Screen 
-        name="Accounts" 
-        component={AccountsScreen}
-        options={{ title: 'Accounts' }}
-      />
-    </Tab.Navigator>
+    <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let IconComponent;
+            let iconSize = size + 2;
+            if (route.name === 'Home') {
+              IconComponent = Home;
+            } else if (route.name === 'AddTransaction') {
+              IconComponent = PlusCircle;
+            } else if (route.name === 'History') {
+              IconComponent = List;
+            } else if (route.name === 'Insights') {
+              IconComponent = BarChart2;
+            } else if (route.name === 'Accounts') {
+              IconComponent = Wallet;
+            }
+            return <IconComponent color={color} size={iconSize} strokeWidth={focused ? 2.4 : 2} />;
+          },
+          tabBarActiveTintColor: '#3B82F6',
+          tabBarInactiveTintColor: '#94A3B8',
+          tabBarShowLabel: true,
+          tabBarLabelStyle: {
+            fontFamily: 'Inter_600SemiBold',
+            fontSize: 12,
+            marginTop: 0,
+            marginBottom: 4,
+          },
+          tabBarStyle: {
+            backgroundColor: Platform.OS === 'ios' ? 'transparent' : '#1E293B',
+            borderTopWidth: 0,
+            height: 64,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
+            elevation: 8,
+          },
+          headerShown: false,
+          tabBarBackground: () => (
+            <BlurView
+              intensity={40}
+              tint="dark"
+              style={{ flex: 1, backgroundColor: 'rgba(30,41,59,0.92)' }}
+            />
+          ),
+        })}
+      >
+        <Tab.Screen 
+          name="Home" 
+          component={HomeScreen}
+          options={{ title: 'Home' }}
+        />
+        <Tab.Screen 
+          name="AddTransaction" 
+          component={AddTransactionScreen}
+          options={{ title: 'Add' }}
+        />
+        <Tab.Screen 
+          name="History" 
+          component={HistoryScreen}
+          options={{ title: 'History' }}
+        />
+        <Tab.Screen 
+          name="Insights" 
+          component={InsightsScreen}
+          options={{ title: 'Insights' }}
+        />
+        <Tab.Screen 
+          name="Accounts" 
+          component={AccountsScreen}
+          options={{ title: 'Accounts' }}
+        />
+      </Tab.Navigator>
+    </SafeAreaView>
   );
 }
 

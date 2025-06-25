@@ -1,6 +1,7 @@
 import React from 'react';
 import { TextInput } from 'react-native-paper';
 import theme from '../utils/theme';
+import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const AppTextField = ({
   value,
