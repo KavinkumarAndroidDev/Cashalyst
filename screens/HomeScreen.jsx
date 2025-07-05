@@ -216,7 +216,7 @@ const HomeScreen = ({ navigation }) => {
                       <Text style={[styles.transactionTitle, { fontFamily: 'Inter_600SemiBold' }]}>{transaction.title}</Text>
                       <View style={styles.transactionMetaRow}>
                         <Text style={styles.transactionMeta}>{transaction.category}</Text>
-                        <Text style={styles.transactionMeta}>• {transaction.source}</Text>
+                        <Text style={styles.transactionMeta}>• {accounts.find(acc => acc.id === transaction.sourceId)?.name || transaction.source}</Text>
                         <Text style={styles.transactionMeta}>• {new Date(transaction.date).toLocaleDateString()}</Text>
                       </View>
                     </View>

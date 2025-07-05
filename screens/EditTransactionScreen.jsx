@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { TextInput, Surface, SegmentedButtons } from 'react-native-paper';
+import { TextInput, Surface, SegmentedButtons, Snackbar } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import useStore from '../hooks/useStore';
 import { generateId } from '../utils/formatCurrency';
@@ -31,6 +32,8 @@ const EditTransactionScreen = ({ navigation, route }) => {
     date: transaction?.date || new Date().toISOString().split('T')[0],
     note: transaction?.note || '',
   });
+  const [localLoading, setLocalLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const transactionTypes = [
     { value: 'expense', label: 'Expense', icon: ArrowUpCircle },
@@ -64,6 +67,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
   };
 
   const handleSubmit = async () => {
+    if (localLoading) return;
     // Validation
     if (!formData.title.trim()) {
       Alert.alert('Error', 'Please enter a transaction title');
@@ -81,24 +85,20 @@ const EditTransactionScreen = ({ navigation, route }) => {
       Alert.alert('Error', 'Please select a source');
       return;
     }
+    setLocalLoading(true);
     try {
       await updateTransaction(transaction.id, {
         ...formData,
         amount: parseFloat(formData.amount),
         note: formData.note.trim(),
       });
-      Alert.alert(
-        'Success!',
-        'Transaction updated successfully',
-        [
-          {
-            text: 'Done',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      setShowSuccess(true);
+      await new Promise(res => setTimeout(res, 350)); // simulate fast feedback
+      navigation.goBack();
     } catch (error) {
       Alert.alert('Error', 'Failed to update transaction. Please try again.');
+    } finally {
+      setLocalLoading(false);
     }
   };
 
@@ -221,14 +221,23 @@ const EditTransactionScreen = ({ navigation, route }) => {
           <AppButton
             style={{ marginTop: theme.spacing.lg }}
             onPress={handleSubmit}
-            disabled={!canSubmit() || loading}
+            disabled={!canSubmit() || localLoading}
           >
             <Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: theme.font.size.label }}>
-              {loading ? 'Saving...' : 'Save Changes'}
+              {localLoading ? 'Saving...' : 'Save Changes'}
             </Text>
+            {localLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />}
           </AppButton>
         </Surface>
       </ScrollView>
+      <Snackbar
+        visible={showSuccess}
+        onDismiss={() => setShowSuccess(false)}
+        duration={1500}
+        style={{ backgroundColor: theme.colors.accent, marginBottom: 32, alignSelf: 'center', borderRadius: 16, minWidth: 260, maxWidth: 340, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}
+      >
+        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction updated successfully</Text>
+      </Snackbar>
     </View>
   );
 };

@@ -8,7 +8,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Surface, FAB } from 'react-native-paper';
+import { Surface, FAB, Snackbar } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import useStore from '../hooks/useStore';
 import { generateId, formatCurrency } from '../utils/formatCurrency';
@@ -31,6 +31,10 @@ const AccountsScreen = ({ navigation }) => {
   const [stats, setStats] = useState({
     totalBalance: 0,
   });
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [delayedLoading, setDelayedLoading] = useState(false);
+  let loadingTimeout = null;
 
   useEffect(() => {
     const currentStats = getStats();
@@ -79,12 +83,12 @@ const AccountsScreen = ({ navigation }) => {
       Alert.alert('Error', 'Please enter an account name');
       return;
     }
-
     if (!formData.balance || parseFloat(formData.balance) < 0) {
       Alert.alert('Error', 'Please enter a valid balance');
       return;
     }
-
+    setDelayedLoading(false);
+    loadingTimeout = setTimeout(() => setDelayedLoading(true), 300);
     try {
       const accountData = {
         name: formData.name.trim(),
@@ -92,21 +96,24 @@ const AccountsScreen = ({ navigation }) => {
         icon: sourceTypes[formData.type].icon,
         balance: parseFloat(formData.balance),
       };
-
+      // Optimistically close modal and show success
+      closeModal();
       if (editingAccount) {
         await updateAccount(editingAccount.id, accountData);
-        Alert.alert('Success', 'Account updated successfully');
+        setSuccessMsg('Account updated successfully');
       } else {
         await addAccount({
           id: generateId(),
           ...accountData,
         });
-        Alert.alert('Success', 'Account added successfully');
+        setSuccessMsg('Account added successfully');
       }
-
-      closeModal();
+      setShowSuccess(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to save account. Please try again.');
+    } finally {
+      clearTimeout(loadingTimeout);
+      setDelayedLoading(false);
     }
   };
 
@@ -333,31 +340,34 @@ const AccountsScreen = ({ navigation }) => {
                 style={{ marginBottom: theme.spacing.lg }}
               />
               {/* Balance */}
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Current Balance (₹)</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.lg }}>
-                <Text style={styles.currencySymbol}>₹</Text>
-                <AppTextField
-                  value={formData.balance}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, balance: text }))}
-                  keyboardType="numeric"
-                  placeholder="0.00"
-                  style={{ flex: 1 }}
-                />
-              </View>
-              {/* Submit Button */}
+              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Balance</Text>
+              <AppTextField
+                value={formData.balance}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, balance: text }))}
+                keyboardType="numeric"
+                placeholder="0.00"
+                style={{ marginBottom: theme.spacing.lg }}
+              />
               <AppButton
-                variant="filled"
-                style={{ marginTop: theme.spacing.lg, alignSelf: 'center', minWidth: 180 }}
+                style={{ marginTop: theme.spacing.lg, alignSelf: 'center', minWidth: 180, ...theme.button.filled, opacity: delayedLoading ? 0.6 : 1 }}
                 onPress={handleSubmit}
+                disabled={delayedLoading}
+                activeOpacity={0.85}
               >
-                <Text style={styles.submitButtonText}>
-                  {editingAccount ? 'Update Account' : 'Add Account'}
-                </Text>
+                <Text style={theme.button.filledLabel}>{editingAccount ? (delayedLoading ? 'Saving...' : 'Save Changes') : (delayedLoading ? 'Adding...' : 'Add Account')}</Text>
               </AppButton>
             </Surface>
           </View>
         </View>
       </Modal>
+      <Snackbar
+        visible={showSuccess}
+        onDismiss={() => setShowSuccess(false)}
+        duration={1800}
+        style={{ backgroundColor: theme.colors.accent, marginBottom: 32 }}
+      >
+        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium }}>{successMsg}</Text>
+      </Snackbar>
     </View>
   );
 };

@@ -25,6 +25,27 @@ const storeData = async (key, value) => {
   }
 };
 
+// Migration: Add sourceId to all transactions based on source name
+export const migrateTransactionsAddSourceId = async () => {
+  const transactions = await getData(TRANSACTIONS_KEY) || [];
+  const accounts = await getData(ACCOUNTS_KEY) || [];
+  let changed = false;
+  const migrated = transactions.map(txn => {
+    if (!txn.sourceId && txn.source) {
+      const acc = accounts.find(acc => acc.name === txn.source);
+      if (acc) {
+        changed = true;
+        return { ...txn, sourceId: acc.id };
+      }
+    }
+    return txn;
+  });
+  if (changed) {
+    await storeData(TRANSACTIONS_KEY, migrated);
+    console.log('Migrated transactions to add sourceId');
+  }
+};
+
 // Initialize database with default data
 export const initDatabase = async () => {
   try {
@@ -38,6 +59,7 @@ export const initDatabase = async () => {
       await storeData(TRANSACTIONS_KEY, []);
     }
     await migrateAccounts();
+    await migrateTransactionsAddSourceId();
     console.log('AsyncStorage database initialized successfully');
   } catch (error) {
     console.error('Failed to initialize database:', error);
@@ -51,12 +73,23 @@ export const addTransaction = async (transaction) => {
     const transactions = await getData(TRANSACTIONS_KEY) || [];
     const accounts = await getData(ACCOUNTS_KEY) || [];
     
-    // Add transaction
-    transactions.unshift(transaction); // Add to beginning
+    // Find the account by id (prefer sourceId, fallback to name for legacy)
+    let accountIndex = -1;
+    let sourceId = transaction.sourceId;
+    if (!sourceId && transaction.source) {
+      // Legacy: find account by name
+      const acc = accounts.find(acc => acc.name === transaction.source);
+      if (acc) sourceId = acc.id;
+    }
+    if (sourceId) {
+      accountIndex = accounts.findIndex(acc => acc.id === sourceId);
+    }
+    // Add sourceId to transaction for new/legacy
+    const transactionWithId = { ...transaction, sourceId };
+    transactions.unshift(transactionWithId); // Add to beginning
     await storeData(TRANSACTIONS_KEY, transactions);
     
     // Update account balance
-    const accountIndex = accounts.findIndex(acc => acc.name === transaction.source);
     if (accountIndex !== -1) {
       const balanceChange = transaction.type === 'income' ? transaction.amount : -transaction.amount;
       accounts[accountIndex].balance += balanceChange;
@@ -84,7 +117,10 @@ export const getTransactions = async (filters = {}) => {
       filtered = filtered.filter(t => t.category === filters.category);
     }
     
-    if (filters.source) {
+    if (filters.sourceId) {
+      filtered = filtered.filter(t => t.sourceId === filters.sourceId);
+    } else if (filters.source) {
+      // Legacy: filter by source name
       filtered = filtered.filter(t => t.source === filters.source);
     }
     
@@ -117,7 +153,7 @@ export const deleteTransaction = async (id) => {
     const transaction = transactions[transactionIndex];
     
     // Update account balance (reverse the transaction)
-    const accountIndex = accounts.findIndex(acc => acc.name === transaction.source);
+    const accountIndex = accounts.findIndex(acc => acc.id === transaction.sourceId);
     if (accountIndex !== -1) {
       const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
       accounts[accountIndex].balance += balanceChange;
@@ -316,20 +352,20 @@ export const updateTransaction = async (id, updatedData) => {
     const oldTransaction = transactions[transactionIndex];
     const newTransaction = { ...oldTransaction, ...updatedData, id };
 
-    // If source or amount/type changed, update account balances
+    // If sourceId or amount/type changed, update account balances
     if (
-      oldTransaction.source !== newTransaction.source ||
+      oldTransaction.sourceId !== newTransaction.sourceId ||
       oldTransaction.amount !== newTransaction.amount ||
       oldTransaction.type !== newTransaction.type
     ) {
       // Reverse old transaction effect
-      const oldAccountIndex = accounts.findIndex(acc => acc.name === oldTransaction.source);
+      const oldAccountIndex = accounts.findIndex(acc => acc.id === oldTransaction.sourceId);
       if (oldAccountIndex !== -1) {
         const reverse = oldTransaction.type === 'income' ? -oldTransaction.amount : oldTransaction.amount;
         accounts[oldAccountIndex].balance += reverse;
       }
       // Apply new transaction effect
-      const newAccountIndex = accounts.findIndex(acc => acc.name === newTransaction.source);
+      const newAccountIndex = accounts.findIndex(acc => acc.id === newTransaction.sourceId);
       if (newAccountIndex !== -1) {
         const apply = newTransaction.type === 'income' ? newTransaction.amount : -newTransaction.amount;
         accounts[newAccountIndex].balance += apply;

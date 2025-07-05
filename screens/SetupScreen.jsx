@@ -10,7 +10,7 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import { TextInput, Surface } from 'react-native-paper';
+import { TextInput, Surface, Snackbar } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Picker } from '@react-native-picker/picker';
 import useStore from '../hooks/useStore';
@@ -39,6 +39,10 @@ const SetupScreen = ({ navigation, route }) => {
     }
   ]);
   const [accountsLoaded, setAccountsLoaded] = useState(true);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [delayedLoading, setDelayedLoading] = useState(false);
+  let loadingTimeout = null;
 
   const sourceTypes = {
     upi: { label: 'UPI / Digital Wallet', icon: '💳' },
@@ -112,6 +116,8 @@ const SetupScreen = ({ navigation, route }) => {
       Alert.alert('Error', 'Please enter amount for at least one source');
       return;
     }
+    setDelayedLoading(false);
+    loadingTimeout = setTimeout(() => setDelayedLoading(true), 300);
     try {
       // Load existing accounts from storage
       const existingAccounts = await require('../db/asyncStorageService').getAccounts();
@@ -132,19 +138,14 @@ const SetupScreen = ({ navigation, route }) => {
       if (typeof useStore.getState === 'function' && useStore.getState().loadAccounts) {
         await useStore.getState().loadAccounts();
       }
+      setSuccessMsg('Your money sources have been set up successfully.');
+      setShowSuccess(true);
       if (onSetupComplete) await onSetupComplete();
-      Alert.alert(
-        'Welcome to Cashalyst!',
-        'Your money sources have been set up successfully. You can now start tracking your transactions!',
-        [
-          {
-            text: 'Get Started',
-            onPress: () => {}, // No navigation here; handled by onSetupComplete
-          },
-        ]
-      );
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to set up your money sources. Please try again.');
+    } finally {
+      clearTimeout(loadingTimeout);
+      setDelayedLoading(false);
     }
   };
 
@@ -264,12 +265,21 @@ const SetupScreen = ({ navigation, route }) => {
       <View style={styles.startTrackingContainer}>
         <AppButton
           variant="filled"
-          style={styles.startTrackingButton}
+          style={{ marginTop: theme.spacing.lg, alignSelf: 'center', minWidth: 220, ...theme.button.filled, opacity: delayedLoading ? 0.6 : 1 }}
           onPress={handleStartTracking}
-          disabled={!canStartTracking() || loading}
+          disabled={delayedLoading}
+          activeOpacity={0.85}
         >
-          <Text style={styles.startTrackingText}>{loading ? 'Setting up...' : 'Start Tracking'}</Text>
+          <Text style={theme.button.filledLabel}>{delayedLoading ? 'Setting up...' : 'Start Tracking'}</Text>
         </AppButton>
+        <Snackbar
+          visible={showSuccess}
+          onDismiss={() => setShowSuccess(false)}
+          duration={1800}
+          style={{ backgroundColor: theme.colors.accent, marginBottom: 32 }}
+        >
+          <Text style={{ color: '#fff', fontFamily: theme.font.family.medium }}>{successMsg}</Text>
+        </Snackbar>
       </View>
     </View>
   );

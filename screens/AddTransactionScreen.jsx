@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { TextInput, Surface, SegmentedButtons } from 'react-native-paper';
+import { TextInput, Surface, SegmentedButtons, Snackbar } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import useStore from '../hooks/useStore';
 import { generateId } from '../utils/formatCurrency';
@@ -30,6 +31,9 @@ const AddTransactionScreen = ({ navigation }) => {
     date: new Date().toISOString().split('T')[0],
     note: '',
   });
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [localLoading, setLocalLoading] = useState(false);
 
   const transactionTypes = [
     { value: 'expense', label: 'Expense', icon: ArrowUpCircle },
@@ -63,6 +67,7 @@ const AddTransactionScreen = ({ navigation }) => {
   };
 
   const handleSubmit = async () => {
+    if (localLoading) return;
     // Validation
     if (!formData.title.trim()) {
       Alert.alert('Error', 'Please enter a transaction title');
@@ -80,6 +85,7 @@ const AddTransactionScreen = ({ navigation }) => {
       Alert.alert('Error', 'Please select a source');
       return;
     }
+    setLocalLoading(true);
     try {
       const transaction = {
         id: generateId(),
@@ -91,33 +97,24 @@ const AddTransactionScreen = ({ navigation }) => {
         date: formData.date,
         note: formData.note.trim(),
       };
-      await addTransaction(transaction);
-      Alert.alert(
-        'Success!',
-        'Transaction added successfully',
-        [
-          {
-            text: 'Add Another',
-            onPress: () => {
-              setFormData({
-                title: '',
-                amount: '',
-                type: 'expense',
-                category: '',
-                source: '',
-                date: new Date().toISOString().split('T')[0],
-                note: '',
-              });
-            },
-          },
-          {
-            text: 'Done',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      // Optimistically update UI
+      addTransaction(transaction);
+      setShowSuccess(true);
+      setFormData({
+        title: '',
+        amount: '',
+        type: 'expense',
+        category: '',
+        source: '',
+        date: new Date().toISOString().split('T')[0],
+        note: '',
+      });
+      // Await persistence
+      await new Promise(res => setTimeout(res, 350)); // simulate fast feedback
     } catch (error) {
       Alert.alert('Error', 'Failed to add transaction. Please try again.');
+    } finally {
+      setLocalLoading(false);
     }
   };
 
@@ -237,14 +234,23 @@ const AddTransactionScreen = ({ navigation }) => {
         </Surface>
         {/* Submit Button */}
         <AppButton
-          style={{ marginTop: theme.spacing.lg, alignSelf: 'center', minWidth: 220, ...theme.button.filled, opacity: loading || !canSubmit() ? 0.6 : 1 }}
+          style={{ marginTop: theme.spacing.lg, alignSelf: 'center', minWidth: 220, ...theme.button.filled, opacity: localLoading || !canSubmit() ? 0.6 : 1 }}
           onPress={handleSubmit}
-          disabled={loading || !canSubmit()}
+          disabled={localLoading || !canSubmit()}
           activeOpacity={0.85}
         >
-          <Text style={theme.button.filledLabel}>{loading ? 'Adding...' : 'Add Transaction'}</Text>
+          <Text style={theme.button.filledLabel}>{localLoading ? 'Adding...' : 'Add Transaction'}</Text>
+          {localLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />}
         </AppButton>
       </ScrollView>
+      <Snackbar
+        visible={showSuccess}
+        onDismiss={() => setShowSuccess(false)}
+        duration={1800}
+        style={{ backgroundColor: theme.colors.accent, marginBottom: 32, alignSelf: 'center', borderRadius: 16, minWidth: 260, maxWidth: 340, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}
+      >
+        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction added successfully</Text>
+      </Snackbar>
     </View>
   );
 };

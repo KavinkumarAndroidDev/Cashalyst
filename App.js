@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Text, View, ActivityIndicator, Platform } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Provider as PaperProvider } from 'react-native-paper';
@@ -25,6 +25,14 @@ import * as NavigationBar from 'expo-navigation-bar';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
+const navTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: '#0F172A',
+  },
+};
 
 // Tab Navigator for main app screens
 function MainTabNavigator() {
@@ -219,7 +227,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <PaperProvider>
-        <NavigationContainer>
+        <NavigationContainer theme={navTheme}>
           <Stack.Navigator
             screenOptions={{
               headerShown: false,

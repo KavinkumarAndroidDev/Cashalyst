@@ -14,7 +14,7 @@ import {
   Dimensions,
   Keyboard,
 } from 'react-native';
-import { Surface, Searchbar, Chip, IconButton, Modal, Portal, Provider as PaperProvider } from 'react-native-paper';
+import { Surface, Searchbar, Chip, IconButton, Modal, Portal, Provider as PaperProvider, Snackbar } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import useStore from '../hooks/useStore';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -29,6 +29,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppSearchBar from '../components/AppSearchBar';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
+import { useFocusEffect } from '@react-navigation/native';
 
 const CATEGORY_ICONS = {
   'Food & Dining': Utensils,
@@ -84,7 +85,7 @@ const INCOME_CATEGORIES = [
 const ALL_CATEGORIES = Array.from(new Set([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]));
 
 const HistoryScreen = ({ navigation }) => {
-  const { transactions, accounts, deleteTransaction } = useStore();
+  const { transactions, accounts, deleteTransaction, loadTransactions } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedSource, setSelectedSource] = useState('all');
@@ -102,6 +103,9 @@ const HistoryScreen = ({ navigation }) => {
   const [modalDateRange, setModalDateRange] = useState(dateRange);
   const [showModalDatePicker, setShowModalDatePicker] = useState(false);
   const [modalDatePickerMode, setModalDatePickerMode] = useState('from');
+  const [showFilterTip, setShowFilterTip] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   const getTotalAmount = () => {
     return filteredTransactions.reduce((total, transaction) => {
@@ -136,6 +140,12 @@ const HistoryScreen = ({ navigation }) => {
       }
       const views = await AsyncStorage.getItem(SAVED_VIEWS_KEY);
       if (views) setSavedViews(JSON.parse(views));
+      // Show filter tip on first use
+      const tipShown = await AsyncStorage.getItem('history_filter_tip_shown');
+      if (!tipShown) {
+        setShowFilterTip(true);
+        await AsyncStorage.setItem('history_filter_tip_shown', 'true');
+      }
     })();
   }, []);
 
@@ -185,6 +195,12 @@ const HistoryScreen = ({ navigation }) => {
     setLastTotal(newTotal);
   }, [filteredTransactions]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      loadTransactions();
+    }, [loadTransactions])
+  );
+
   const handleSearchChange = (text) => {
     setSearchQuery(text);
   };
@@ -202,10 +218,10 @@ const HistoryScreen = ({ navigation }) => {
 
     if (searchQuery.trim()) {
       filtered = filtered.filter(transaction =>
-        transaction.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        transaction.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        transaction.note.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        transaction.source.toLowerCase().includes(searchQuery.toLowerCase())
+        transaction.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transaction.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transaction.note?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        accounts.find(acc => acc.id === transaction.sourceId)?.name?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -214,7 +230,7 @@ const HistoryScreen = ({ navigation }) => {
     }
 
     if (selectedSource !== 'all') {
-      filtered = filtered.filter(transaction => transaction.source === selectedSource);
+      filtered = filtered.filter(transaction => transaction.sourceId === selectedSource || transaction.source === selectedSource);
     }
 
     if (selectedCategory !== 'all') {
@@ -278,10 +294,15 @@ const HistoryScreen = ({ navigation }) => {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            setDeleteLoading(true);
             try {
               await deleteTransaction(transaction.id);
+              setShowDeleteSuccess(true);
+              await new Promise(res => setTimeout(res, 350));
             } catch (error) {
               Alert.alert('Error', 'Failed to delete transaction. Please try again.');
+            } finally {
+              setDeleteLoading(false);
             }
           },
         },
@@ -363,6 +384,9 @@ const HistoryScreen = ({ navigation }) => {
   // In modal: button style
   const modalButtonStyle = { flex: 1, minHeight: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 16, paddingHorizontal: 0, paddingVertical: 0 };
 
+  // Helper: are filters active?
+  const filtersActive = selectedType !== 'all' || selectedSource !== 'all' || selectedCategory !== 'all' || searchQuery.trim() !== '' || dateRange.from || dateRange.to;
+
   const renderHeader = () => (
     <View style={{ backgroundColor: theme.colors.background, paddingBottom: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -371,10 +395,14 @@ const HistoryScreen = ({ navigation }) => {
           placeholder="Search transactions..."
           style={{ flex: 1 }}
         />
-        <AppButton style={{ backgroundColor: theme.colors.accent, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12, elevation: 2 }} onPress={openFilterModal}>
+        <AppButton style={{ backgroundColor: theme.colors.accent, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12, elevation: 2, position: 'relative' }} onPress={openFilterModal}>
           <SlidersHorizontal color="#fff" size={20} />
+          {filtersActive && (
+            <View style={{ position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.accent, borderWidth: 1, borderColor: '#fff' }} />
+          )}
         </AppButton>
       </View>
+      {/* Snackbar is now at the root, not here */}
       <TouchableOpacity onPress={() => setShowSubtotals(v => !v)} activeOpacity={0.85} style={{ marginBottom: 8, alignItems: 'center' }}>
         <Animated.Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: 17, letterSpacing: -0.2 }}>
           {`Showing ${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''} · Total: ₹${Math.abs(getTotalAmount()).toLocaleString()}`}
@@ -394,13 +422,13 @@ const HistoryScreen = ({ navigation }) => {
       <Portal>
         <Modal visible={filterModalVisible} onDismiss={() => setFilterModalVisible(false)} contentContainerStyle={{ backgroundColor: 'transparent' }}>
           <Surface style={{ backgroundColor: theme.colors.card, borderRadius: 20, padding: 0, marginHorizontal: 16, elevation: 8, shadowOpacity: 0.12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopLeftRadius: 20, borderTopRightRadius: 20, backgroundColor: theme.colors.accent, paddingHorizontal: 20, paddingVertical: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopLeftRadius: 20, borderTopRightRadius: 20, backgroundColor: theme.colors.card, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderColor: theme.colors.border }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <SlidersHorizontal color="#fff" size={20} />
-                <Text style={{ color: '#fff', fontFamily: theme.font.family.bold, fontSize: 18, fontWeight: '700' }}>Filters</Text>
+                <SlidersHorizontal color={theme.colors.accent} size={20} />
+                <Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: 18, fontWeight: '700' }}>Filters</Text>
               </View>
               <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
-                <X color="#fff" size={22} />
+                <X color={theme.colors.textMain} size={22} />
               </TouchableOpacity>
             </View>
             <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12 }}>
@@ -412,8 +440,8 @@ const HistoryScreen = ({ navigation }) => {
                     key={type}
                     selected={modalType === type}
                     onPress={() => setModalType(type)}
-                    style={{ backgroundColor: modalType === type ? theme.colors.accent : theme.colors.background, borderRadius: 16, height: 40, minWidth: 80, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border }}
-                    textStyle={{ color: modalType === type ? '#fff' : theme.colors.textMain, fontFamily: theme.font.family.medium, fontSize: 15, textAlign: 'center' }}
+                    style={{ backgroundColor: modalType === type ? theme.colors.accent + '22' : theme.colors.background, borderRadius: 16, height: 40, minWidth: 80, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border }}
+                    textStyle={{ color: modalType === type ? theme.colors.accent : theme.colors.textMain, fontFamily: theme.font.family.medium, fontSize: 15, textAlign: 'center' }}
                   >
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </Chip>
@@ -434,7 +462,7 @@ const HistoryScreen = ({ navigation }) => {
               <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 6 }}>Source</Text>
               <View style={{ marginBottom: 16, width: '100%' }}>
                 <AppDropdown
-                  items={[{ label: 'All Sources', value: 'all' }, ...accounts.map((account) => ({ label: account.name, value: account.name }))]}
+                  items={[{ label: 'All Sources', value: 'all' }, ...accounts.map((account) => ({ label: account.name, value: account.id }))]}
                   selectedValue={modalSource}
                   onValueChange={setModalSource}
                   placeholder="Source"
@@ -475,8 +503,8 @@ const HistoryScreen = ({ navigation }) => {
                 <AppButton style={{ ...modalButtonStyle, backgroundColor: theme.colors.accent, elevation: 2 }} onPress={applyModalFilters}>
                   <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15, textAlign: 'center' }}>Apply</Text>
                 </AppButton>
-                <AppButton style={{ ...modalButtonStyle, backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.border, elevation: 0 }} onPress={resetModalFilters}>
-                  <Text style={{ color: theme.colors.textMain, fontWeight: '700', fontSize: 15, textAlign: 'center' }}>Reset</Text>
+                <AppButton style={{ ...modalButtonStyle, backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.accent, elevation: 0 }} onPress={resetModalFilters}>
+                  <Text style={{ color: theme.colors.accent, fontWeight: '700', fontSize: 15, textAlign: 'center' }}>Reset</Text>
                 </AppButton>
               </View>
             </View>
@@ -555,7 +583,7 @@ const HistoryScreen = ({ navigation }) => {
                     </View>
                     <View style={styles.transactionFooter}>
                       <Text style={styles.transactionSource}>
-                        {transaction.source}
+                        {accounts.find(acc => acc.id === transaction.sourceId)?.name || transaction.source}
                       </Text>
                       {transaction.note && (
                         <Text style={styles.transactionNote}>
@@ -585,19 +613,22 @@ const HistoryScreen = ({ navigation }) => {
         }
         contentContainerStyle={styles.scrollContent}
       />
-      {showDatePicker && (
-        <DateTimePicker
-          value={dateRange[datePickerMode] ? new Date(dateRange[datePickerMode]) : new Date()}
-          mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowDatePicker(false);
-            if (selectedDate) {
-              setDateRange(prev => ({ ...prev, [datePickerMode]: selectedDate }));
-            }
-          }}
-        />
-      )}
+      <Snackbar
+        visible={showFilterTip}
+        onDismiss={() => setShowFilterTip(false)}
+        duration={2200}
+        style={{ backgroundColor: theme.colors.card, alignSelf: 'center', borderRadius: 16, minWidth: 180, maxWidth: 320, position: 'absolute', left: 0, right: 0, top: '40%', zIndex: 100 }}
+      >
+        <Text style={{ color: theme.colors.accent, fontFamily: theme.font.family.medium, textAlign: 'center' }}>Tip: Filters are remembered. Use 'Reset' to clear.</Text>
+      </Snackbar>
+      <Snackbar
+        visible={showDeleteSuccess}
+        onDismiss={() => setShowDeleteSuccess(false)}
+        duration={1500}
+        style={{ backgroundColor: theme.colors.accent, marginBottom: 32, alignSelf: 'center', borderRadius: 16, minWidth: 260, maxWidth: 340, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}
+      >
+        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction deleted</Text>
+      </Snackbar>
     </View>
   );
 };

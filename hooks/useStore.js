@@ -42,15 +42,22 @@ const useStore = create((set, get) => ({
     const prevTransactions = get().transactions;
     const prevAccounts = get().accounts;
     try {
+      // Find the account by id (from transactionData or by name for legacy)
+      let sourceId = transactionData.sourceId;
+      if (!sourceId && transactionData.source) {
+        const acc = prevAccounts.find(acc => acc.name === transactionData.source);
+        if (acc) sourceId = acc.id;
+      }
       const transaction = {
         id: generateId(),
         date: getCurrentDate(),
-        ...transactionData
+        ...transactionData,
+        sourceId,
       };
       // Optimistically update UI
       let newTransactions = [transaction, ...prevTransactions];
       let newAccounts = prevAccounts.map(acc => {
-        if (acc.name === transaction.source) {
+        if (acc.id === sourceId) {
           const balanceChange = transaction.type === 'income' ? transaction.amount : -transaction.amount;
           return { ...acc, balance: acc.balance + balanceChange };
         }
@@ -87,7 +94,7 @@ const useStore = create((set, get) => ({
       // Optimistically update UI
       let newTransactions = prevTransactions.filter(t => t.id !== id);
       let newAccounts = prevAccounts.map(acc => {
-        if (acc.name === transaction.source) {
+        if (acc.id === transaction.sourceId) {
           const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
           return { ...acc, balance: acc.balance + balanceChange };
         }

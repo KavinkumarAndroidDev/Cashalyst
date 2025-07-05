@@ -3,22 +3,22 @@ import db from './initDB';
 // Transaction operations
 export const addTransaction = (transaction) => {
   return new Promise((resolve, reject) => {
-    const { id, amount, type, category, source, note, date } = transaction;
+    const { id, amount, type, category, source, sourceId, note, date } = transaction;
     
     db.transaction(
       (tx) => {
-        // Insert transaction
+        // Insert transaction (store both source and sourceId for compatibility)
         tx.executeSql(
-          `INSERT INTO transactions (id, amount, type, category, source, note, date) 
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [id, amount, type, category, source, note, date]
+          `INSERT INTO transactions (id, amount, type, category, source, sourceId, note, date) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [id, amount, type, category, source, sourceId, note, date]
         );
 
         // Update account balance
         const balanceChange = type === 'income' ? amount : -amount;
         tx.executeSql(
           `UPDATE accounts SET balance = balance + ? WHERE id = ?`,
-          [balanceChange, source]
+          [balanceChange, sourceId || source]
         );
       },
       (error) => {
@@ -49,7 +49,10 @@ export const getTransactions = (filters = {}) => {
       params.push(filters.category);
     }
 
-    if (filters.source) {
+    if (filters.sourceId) {
+      conditions.push('sourceId = ?');
+      params.push(filters.sourceId);
+    } else if (filters.source) {
       conditions.push('source = ?');
       params.push(filters.source);
     }
@@ -90,7 +93,7 @@ export const deleteTransaction = (id) => {
       (tx) => {
         // First get the transaction to update account balance
         tx.executeSql(
-          'SELECT amount, type, source FROM transactions WHERE id = ?',
+          'SELECT amount, type, source, sourceId FROM transactions WHERE id = ?',
           [id],
           (_, { rows }) => {
             if (rows.length > 0) {
@@ -100,7 +103,7 @@ export const deleteTransaction = (id) => {
               // Update account balance
               tx.executeSql(
                 'UPDATE accounts SET balance = balance + ? WHERE id = ?',
-                [balanceChange, transaction.source]
+                [balanceChange, transaction.sourceId || transaction.source]
               );
             }
           }
@@ -242,6 +245,33 @@ export const getCategoryStats = (year, month) => {
       },
       (error) => {
         console.error('Get category stats error:', error);
+        reject(error);
+      }
+    );
+  });
+}; 
+
+// Migration: Add sourceId to all transactions based on source name
+export const migrateTransactionsAddSourceId = () => {
+  return new Promise((resolve, reject) => {
+    db.transaction(
+      (tx) => {
+        tx.executeSql('SELECT id, source FROM transactions WHERE sourceId IS NULL OR sourceId = ""', [], (_, { rows }) => {
+          if (rows.length === 0) return resolve();
+          tx.executeSql('SELECT id, name FROM accounts', [], (_, { rows: accRows }) => {
+            for (let i = 0; i < rows.length; i++) {
+              const txn = rows.item(i);
+              const acc = accRows._array.find(a => a.name === txn.source);
+              if (acc) {
+                tx.executeSql('UPDATE transactions SET sourceId = ? WHERE id = ?', [acc.id, txn.id]);
+              }
+            }
+            resolve();
+          });
+        });
+      },
+      (error) => {
+        console.error('Migrate transactions add sourceId error:', error);
         reject(error);
       }
     );

@@ -127,13 +127,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
+    minHeight: 400, // ensure vertical centering on tall screens
   },
   logo: {
     color: theme.colors.accent,
     fontFamily: theme.font.family.bold,
-    fontSize: theme.font.size.title,
+    fontSize: theme.font.size.title + 6, // slightly larger
     letterSpacing: 1.5,
     textAlign: 'center',
+    marginBottom: 8, // add space below logo
   },
   quoteIcon: {
     fontSize: 32,
@@ -151,6 +153,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     lineHeight: theme.font.lineHeight.body,
     maxWidth: 320,
+    paddingHorizontal: 8, // add breathing room
   },
   quoteAuthor: {
     color: theme.colors.textSubtle,
@@ -160,11 +163,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   progressBar: {
-    width: 120,
+    width: 160, // increased width
     height: 6,
     backgroundColor: theme.colors.input,
     borderRadius: 8,
     overflow: 'hidden',
+    alignSelf: 'center',
   },
   progressFill: {
     width: '55%',

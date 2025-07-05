@@ -14,10 +14,22 @@ export const initDatabase = () => {
             type TEXT NOT NULL,
             category TEXT NOT NULL,
             source TEXT NOT NULL,
+            sourceId TEXT,
             note TEXT,
             date TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
           );`
+        );
+        // Migration: add sourceId column if not present
+        tx.executeSql(
+          `PRAGMA table_info(transactions);`,
+          [],
+          (_, { rows }) => {
+            const hasSourceId = rows._array.some(col => col.name === 'sourceId');
+            if (!hasSourceId) {
+              tx.executeSql('ALTER TABLE transactions ADD COLUMN sourceId TEXT;');
+            }
+          }
         );
 
         // Create accounts table
