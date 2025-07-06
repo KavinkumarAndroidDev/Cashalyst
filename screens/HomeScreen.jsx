@@ -7,12 +7,13 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { Surface, FAB } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import useStore from '../hooks/useStore';
 import { formatCurrency } from '../utils/formatCurrency';
-import { CreditCard, TrendingUp, TrendingDown, PlusCircle, List, BarChart2, Wallet, ShoppingCart, Utensils, Film, PiggyBank, Banknote, Calendar, ArrowDownCircle, ArrowUpCircle, Car, FileText, Book } from 'lucide-react-native';
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, Calendar, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, FileText, Book, ArrowDownCircle, ArrowUpCircle, Wallet, PlusCircle, List, BarChart2 } from 'lucide-react-native';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
@@ -56,10 +57,29 @@ const HomeScreen = ({ navigation }) => {
     monthlyExpense: 0,
     monthlySavings: 0,
   });
+  const [balanceAnimation] = useState(new Animated.Value(1));
+  const [lastBalance, setLastBalance] = useState(0);
 
   useEffect(() => {
     const currentStats = getStats();
     setStats(currentStats);
+    
+    // Animate balance change if it's different from last time
+    if (currentStats.totalBalance !== lastBalance && lastBalance !== 0) {
+      Animated.sequence([
+        Animated.timing(balanceAnimation, {
+          toValue: 1.05,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(balanceAnimation, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+    setLastBalance(currentStats.totalBalance);
   }, [accounts, transactions]);
 
   const recentTransactions = transactions
@@ -100,7 +120,7 @@ const HomeScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Total Balance Card - Glassmorphic */}
-        <Surface style={styles.balanceCard}>
+        <Surface style={[styles.balanceCard, { transform: [{ scale: balanceAnimation }] }]}>
           <LinearGradient
             colors={["rgba(59, 130, 246, 0.18)", "rgba(37, 99, 235, 0.08)"]}
             style={styles.balanceGradient}
@@ -209,19 +229,23 @@ const HomeScreen = ({ navigation }) => {
                     <View style={styles.transactionIconWrap}>
                       {(() => {
                         const Icon = CATEGORY_ICONS[transaction.category] || PiggyBank;
-                        return <Icon color={getCategoryColor(transaction.category)} size={22} />;
+                        return <Icon color={getCategoryColor(transaction.category)} size={20} />;
                       })()}
                     </View>
                     <View style={styles.transactionDetails}>
                       <Text style={[styles.transactionTitle, { fontFamily: 'Inter_600SemiBold' }]}>{transaction.title}</Text>
                       <View style={styles.transactionMetaRow}>
                         <Text style={styles.transactionMeta}>{transaction.category}</Text>
-                        <Text style={styles.transactionMeta}>• {accounts.find(acc => acc.id === transaction.sourceId)?.name || transaction.source}</Text>
-                        <Text style={styles.transactionMeta}>• {new Date(transaction.date).toLocaleDateString()}</Text>
+                        <Text style={styles.transactionMeta}>•</Text>
+                        <Text style={[styles.transactionMeta, { color: '#3B82F6', fontWeight: '600' }]}>{accounts.find(acc => acc.id === transaction.sourceId)?.name || transaction.source}</Text>
+                        <Text style={styles.transactionMeta}>•</Text>
+                        <Text style={styles.transactionMeta}>{new Date(transaction.date).toLocaleDateString()}</Text>
                       </View>
                     </View>
                     <View style={styles.transactionAmountWrap}>
-                      <Text style={[styles.amountText, { color: getCategoryColor(transaction.category), fontFamily: 'Inter_700Bold' }]}> {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}</Text>
+                      <Text style={[styles.amountText, { color: transaction.type === 'income' ? '#10B981' : '#EF4444', fontFamily: 'Inter_700Bold' }]}>
+                        {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}
+                      </Text>
                     </View>
                   </View>
                 </Surface>
@@ -390,10 +414,11 @@ const styles = StyleSheet.create({
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
+    justifyContent: 'space-between',
   },
   actionCard: {
-    width: (width - 72) / 2,
+    width: (width - 52) / 2,
     borderRadius: 16,
     backgroundColor: '#1E293B',
     borderWidth: 1,
@@ -481,8 +506,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   transactionCard: {
-    marginBottom: 12,
-    borderRadius: 16,
+    marginBottom: 8,
+    borderRadius: 12,
     backgroundColor: '#1E293B',
     borderWidth: 1,
     borderColor: '#334155',
@@ -497,37 +522,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
-  transactionInfo: {
-    flexDirection: 'row',
+  transactionIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(148, 163, 184, 0.1)',
     alignItems: 'center',
-    flex: 1,
-  },
-  transactionIcon: {
-    fontSize: 24,
+    justifyContent: 'center',
     marginRight: 12,
   },
   transactionDetails: {
     flex: 1,
+    marginRight: 12,
   },
   transactionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#F9FAFB',
-    marginBottom: 2,
+    marginBottom: 4,
     letterSpacing: -0.2,
   },
-  transactionDate: {
+  transactionMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  transactionMeta: {
     fontSize: 12,
     color: '#94A3B8',
-    letterSpacing: 0.2,
+    marginRight: 4,
   },
-  transactionAmount: {
+  transactionAmountWrap: {
     alignItems: 'flex-end',
   },
   amountText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    letterSpacing: 0.2,
+    letterSpacing: -0.2,
   },
   fab: {
     position: 'absolute',
@@ -541,22 +572,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
-  },
-  transactionIconWrap: {
-    marginRight: 12,
-  },
-  transactionMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  transactionMeta: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginRight: 4,
-  },
-  transactionAmountWrap: {
-    alignItems: 'flex-end',
   },
 });
 

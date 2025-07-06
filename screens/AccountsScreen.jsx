@@ -7,6 +7,7 @@ import {
   StatusBar,
   Alert,
   Modal,
+  Animated,
 } from 'react-native';
 import { Surface, FAB, Snackbar } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +16,7 @@ import { generateId, formatCurrency } from '../utils/formatCurrency';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
+import AppModal from '../components/AppModal';
 import { ArrowLeft, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, CreditCard, Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
@@ -34,11 +36,32 @@ const AccountsScreen = ({ navigation }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [delayedLoading, setDelayedLoading] = useState(false);
+  const [balanceAnimation] = useState(new Animated.Value(1));
+  const [lastBalance, setLastBalance] = useState(0);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState(null);
   let loadingTimeout = null;
 
   useEffect(() => {
     const currentStats = getStats();
     setStats(currentStats);
+    
+    // Animate balance change if it's different from last time
+    if (currentStats.totalBalance !== lastBalance && lastBalance !== 0) {
+      Animated.sequence([
+        Animated.timing(balanceAnimation, {
+          toValue: 1.02,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(balanceAnimation, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+    setLastBalance(currentStats.totalBalance);
   }, [accounts]);
 
   const sourceTypes = {
@@ -118,25 +141,23 @@ const AccountsScreen = ({ navigation }) => {
   };
 
   const handleDelete = (account) => {
-    Alert.alert(
-      'Delete Account',
-      `Are you sure you want to delete "${account.name}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteAccount(account.id);
-              Alert.alert('Success', 'Account deleted successfully');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete account. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+    setAccountToDelete(account);
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!accountToDelete) return;
+    
+    try {
+      await deleteAccount(accountToDelete.id);
+      setSuccessMsg('Account deleted successfully');
+      setShowSuccess(true);
+    } catch (error) {
+      // You can add error modal here if needed
+    } finally {
+      setDeleteModalVisible(false);
+      setAccountToDelete(null);
+    }
   };
 
   const getAccountsByType = () => {
@@ -188,7 +209,7 @@ const AccountsScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Total Balance Card */}
-        <Surface style={styles.balanceCard}>
+        <Surface style={[styles.balanceCard, { transform: [{ scale: balanceAnimation }] }]}>
           <LinearGradient
             colors={['rgba(59, 130, 246, 0.1)', 'rgba(37, 99, 235, 0.05)']}
             style={styles.balanceGradient}
@@ -198,7 +219,7 @@ const AccountsScreen = ({ navigation }) => {
               {formatCurrency(stats.totalBalance)}
             </Text>
             <Text style={styles.balanceSubtext}>
-              Across {accounts.length} source{accounts.length !== 1 ? 's' : ''}
+              Across all accounts
             </Text>
           </LinearGradient>
         </Surface>
@@ -364,10 +385,43 @@ const AccountsScreen = ({ navigation }) => {
         visible={showSuccess}
         onDismiss={() => setShowSuccess(false)}
         duration={1800}
-        style={{ backgroundColor: theme.colors.accent, marginBottom: 32 }}
+        style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
       >
-        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium }}>{successMsg}</Text>
+        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>{successMsg}</Text>
       </Snackbar>
+
+      {/* Custom Delete Confirmation Modal */}
+      <AppModal
+        visible={deleteModalVisible}
+        onDismiss={() => {
+          setDeleteModalVisible(false);
+          setAccountToDelete(null);
+        }}
+        title="Delete Account"
+        type="warning"
+        message={
+          accountToDelete ? 
+          `Are you sure you want to delete "${accountToDelete.name}"?\n\nThis action cannot be undone.` :
+          ''
+        }
+        actions={[
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => {
+              setDeleteModalVisible(false);
+              setAccountToDelete(null);
+            }
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: confirmDelete
+          }
+        ]}
+        showCloseButton={false}
+        blurBackground={true}
+      />
     </View>
   );
 };
@@ -415,7 +469,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   balanceCard: {
-    marginBottom: 24,
+    marginBottom: 32,
     borderRadius: 16,
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,

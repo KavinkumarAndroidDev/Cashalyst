@@ -13,15 +13,18 @@ import {
   FlatList,
   Dimensions,
   Keyboard,
+  Modal,
 } from 'react-native';
-import { Surface, Searchbar, Chip, IconButton, Modal, Portal, Provider as PaperProvider, Snackbar } from 'react-native-paper';
+import { Surface, Searchbar, Chip, IconButton, Portal, Provider as PaperProvider, Snackbar } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import useStore from '../hooks/useStore';
 import { formatCurrency } from '../utils/formatCurrency';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
-import { ArrowLeft, Pencil, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, Trash2, Filter, RefreshCw, X, SlidersHorizontal } from 'lucide-react-native';
+import AppModal from '../components/AppModal';
+import { ArrowLeft, Pencil, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, Trash2, Filter, RefreshCw, X, SlidersHorizontal, ArrowDownCircle, ArrowUpCircle } from 'lucide-react-native';
 import AppSegmentedButton from '../components/AppSegmentedButton';
 import theme from '../utils/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -106,6 +109,9 @@ const HistoryScreen = ({ navigation }) => {
   const [showFilterTip, setShowFilterTip] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [showFilterReset, setShowFilterReset] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
 
   const getTotalAmount = () => {
     return filteredTransactions.reduce((total, transaction) => {
@@ -285,29 +291,28 @@ const HistoryScreen = ({ navigation }) => {
   };
 
   const handleDelete = (transaction) => {
-    Alert.alert(
-      'Delete Transaction',
-      `Are you sure you want to delete "${transaction.title}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleteLoading(true);
-            try {
-              await deleteTransaction(transaction.id);
-              setShowDeleteSuccess(true);
-              await new Promise(res => setTimeout(res, 350));
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete transaction. Please try again.');
-            } finally {
-              setDeleteLoading(false);
-            }
-          },
-        },
-      ]
-    );
+    setTransactionToDelete(transaction);
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!transactionToDelete) return;
+    
+    setDeleteLoading(true);
+    try {
+      await deleteTransaction(transactionToDelete.id);
+      setShowDeleteSuccess(true);
+      await new Promise(res => setTimeout(res, 350));
+    } catch (error) {
+      // Show error modal
+      setDeleteModalVisible(false);
+      setTransactionToDelete(null);
+      // You can add error modal here if needed
+    } finally {
+      setDeleteLoading(false);
+      setDeleteModalVisible(false);
+      setTransactionToDelete(null);
+    }
   };
 
   const getIncomeExpenseTotals = () => {
@@ -419,98 +424,6 @@ const HistoryScreen = ({ navigation }) => {
           </View>
         )}
       </TouchableOpacity>
-      <Portal>
-        <Modal visible={filterModalVisible} onDismiss={() => setFilterModalVisible(false)} contentContainerStyle={{ backgroundColor: 'transparent' }}>
-          <Surface style={{ backgroundColor: theme.colors.card, borderRadius: 20, padding: 0, marginHorizontal: 16, elevation: 8, shadowOpacity: 0.12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopLeftRadius: 20, borderTopRightRadius: 20, backgroundColor: theme.colors.card, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderColor: theme.colors.border }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <SlidersHorizontal color={theme.colors.accent} size={20} />
-                <Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: 18, fontWeight: '700' }}>Filters</Text>
-              </View>
-              <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
-                <X color={theme.colors.textMain} size={22} />
-              </TouchableOpacity>
-            </View>
-            <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12 }}>
-              {/* Type Chips Row */}
-              <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 6 }}>Type</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                {['all', 'income', 'expense'].map(type => (
-                  <Chip
-                    key={type}
-                    selected={modalType === type}
-                    onPress={() => setModalType(type)}
-                    style={{ backgroundColor: modalType === type ? theme.colors.accent + '22' : theme.colors.background, borderRadius: 16, height: 40, minWidth: 80, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border }}
-                    textStyle={{ color: modalType === type ? theme.colors.accent : theme.colors.textMain, fontFamily: theme.font.family.medium, fontSize: 15, textAlign: 'center' }}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </Chip>
-                ))}
-              </View>
-              {/* Category Dropdown */}
-              <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 6 }}>Category</Text>
-              <View style={{ marginBottom: 16, width: '100%' }}>
-                <AppDropdown
-                  items={[{ label: 'All Categories', value: 'all' }, ...getModalCategories().map(cat => ({ label: cat, value: cat }))]}
-                  selectedValue={modalCategory}
-                  onValueChange={setModalCategory}
-                  placeholder="Category"
-                  style={modalDropdownStyle}
-                />
-              </View>
-              {/* Source Dropdown */}
-              <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 6 }}>Source</Text>
-              <View style={{ marginBottom: 16, width: '100%' }}>
-                <AppDropdown
-                  items={[{ label: 'All Sources', value: 'all' }, ...accounts.map((account) => ({ label: account.name, value: account.id }))]}
-                  selectedValue={modalSource}
-                  onValueChange={setModalSource}
-                  placeholder="Source"
-                  style={modalDropdownStyle}
-                />
-              </View>
-              {/* Date Range Row */}
-              <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 6 }}>Date Range</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20, justifyContent: 'center' }}>
-                <TouchableOpacity onPress={() => { setShowModalDatePicker(true); setModalDatePickerMode('from'); }} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.background, borderRadius: 16, paddingHorizontal: 16, height: 40, borderWidth: 1, borderColor: theme.colors.border, minWidth: 110, justifyContent: 'center' }}>
-                  <Calendar color={theme.colors.textSubtle} size={18} />
-                  <Text style={{ color: theme.colors.textMain, marginLeft: 6, fontFamily: theme.font.family.medium, fontSize: 15 }}>
-                    {modalDateRange.from ? new Date(modalDateRange.from).toLocaleDateString() : 'From'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => { setShowModalDatePicker(true); setModalDatePickerMode('to'); }} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.background, borderRadius: 16, paddingHorizontal: 16, height: 40, borderWidth: 1, borderColor: theme.colors.border, minWidth: 110, justifyContent: 'center' }}>
-                  <Calendar color={theme.colors.textSubtle} size={18} />
-                  <Text style={{ color: theme.colors.textMain, marginLeft: 6, fontFamily: theme.font.family.medium, fontSize: 15 }}>
-                    {modalDateRange.to ? new Date(modalDateRange.to).toLocaleDateString() : 'To'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              {showModalDatePicker && (
-                <DateTimePicker
-                  value={modalDateRange[modalDatePickerMode] ? new Date(modalDateRange[modalDatePickerMode]) : new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={(event, selectedDate) => {
-                    setShowModalDatePicker(false);
-                    if (selectedDate) {
-                      setModalDateRange(prev => ({ ...prev, [modalDatePickerMode]: selectedDate }));
-                    }
-                  }}
-                />
-              )}
-              {/* Action Row */}
-              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 0, justifyContent: 'center', width: '100%' }}>
-                <AppButton style={{ ...modalButtonStyle, backgroundColor: theme.colors.accent, elevation: 2 }} onPress={applyModalFilters}>
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15, textAlign: 'center' }}>Apply</Text>
-                </AppButton>
-                <AppButton style={{ ...modalButtonStyle, backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.accent, elevation: 0 }} onPress={resetModalFilters}>
-                  <Text style={{ color: theme.colors.accent, fontWeight: '700', fontSize: 15, textAlign: 'center' }}>Reset</Text>
-                </AppButton>
-              </View>
-            </View>
-          </Surface>
-        </Modal>
-      </Portal>
     </View>
   );
 
@@ -582,9 +495,26 @@ const HistoryScreen = ({ navigation }) => {
                       </Text>
                     </View>
                     <View style={styles.transactionFooter}>
-                      <Text style={styles.transactionSource}>
-                        {accounts.find(acc => acc.id === transaction.sourceId)?.name || transaction.source}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={[styles.transactionSource, { color: theme.colors.accent, fontWeight: '600' }]}>
+                          {accounts.find(acc => acc.id === transaction.sourceId)?.name || transaction.source}
+                        </Text>
+                        <View style={{ 
+                          backgroundColor: transaction.type === 'income' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', 
+                          borderRadius: 14, 
+                          paddingHorizontal: 8, 
+                          paddingVertical: 4, 
+                          marginLeft: 8,
+                          borderWidth: 1,
+                          borderColor: transaction.type === 'income' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'
+                        }}>
+                          {transaction.type === 'income' ? (
+                            <ArrowDownCircle color="#10B981" size={14} />
+                          ) : (
+                            <ArrowUpCircle color="#EF4444" size={14} />
+                          )}
+                        </View>
+                      </View>
                       {transaction.note && (
                         <Text style={styles.transactionNote}>
                           {transaction.note}
@@ -624,11 +554,268 @@ const HistoryScreen = ({ navigation }) => {
       <Snackbar
         visible={showDeleteSuccess}
         onDismiss={() => setShowDeleteSuccess(false)}
-        duration={1500}
-        style={{ backgroundColor: theme.colors.accent, marginBottom: 32, alignSelf: 'center', borderRadius: 16, minWidth: 260, maxWidth: 340, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}
+        duration={1800}
+        style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
       >
-        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction deleted</Text>
+        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction deleted successfully</Text>
       </Snackbar>
+      <Snackbar
+        visible={showFilterReset}
+        onDismiss={() => setShowFilterReset(false)}
+        duration={1500}
+        style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
+      >
+        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Filters reset successfully</Text>
+      </Snackbar>
+
+      {/* Filter Modal */}
+      {filterModalVisible && (
+        <TouchableOpacity 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+            zIndex: 1000,
+          }}
+          activeOpacity={1}
+          onPress={() => setFilterModalVisible(false)}
+        >
+          <TouchableOpacity 
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: 400 }}
+          >
+            <Surface style={{ 
+              backgroundColor: theme.colors.card, 
+              borderRadius: 20, 
+              padding: 0, 
+              width: '100%', 
+              maxWidth: 400, 
+              elevation: 8, 
+              shadowColor: '#000', 
+              shadowOffset: { width: 0, height: 4 }, 
+              shadowOpacity: 0.15, 
+              shadowRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+            }}>
+              {/* Enhanced Header */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(59, 130, 246, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                    <SlidersHorizontal color={theme.colors.accent} size={20} />
+                  </View>
+                  <View>
+                    <Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: 18, fontWeight: '700' }}>Filters</Text>
+                    <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.regular, fontSize: 12, marginTop: 2 }}>Customize your transaction view</Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => setFilterModalVisible(false)} style={{ padding: 4 }}>
+                  <X color={theme.colors.textSubtle} size={22} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Enhanced Content */}
+              <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24 }}>
+                {/* Type Chips Row */}
+                <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 8 }}>Transaction Type</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                  {['all', 'income', 'expense'].map(type => (
+                    <TouchableOpacity
+                      key={type}
+                      style={{
+                        backgroundColor: modalType === type ? theme.colors.accent + '22' : theme.colors.background,
+                        borderRadius: 16,
+                        height: 40,
+                        minWidth: 80,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderWidth: 1,
+                        borderColor: modalType === type ? theme.colors.accent : theme.colors.border,
+                        paddingHorizontal: 16
+                      }}
+                      onPress={() => setModalType(type)}
+                    >
+                      <Text style={{ 
+                        color: modalType === type ? theme.colors.accent : theme.colors.textMain, 
+                        fontFamily: theme.font.family.medium, 
+                        fontSize: 14, 
+                        textAlign: 'center',
+                        fontWeight: modalType === type ? '600' : '500'
+                      }}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                {/* Category Dropdown */}
+                <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 8 }}>Category</Text>
+                <View style={{ marginBottom: 20, width: '100%' }}>
+                  <AppDropdown
+                    items={[{ label: 'All Categories', value: 'all' }, ...getModalCategories().map(cat => ({ label: cat, value: cat }))]}
+                    selectedValue={modalCategory}
+                    onValueChange={setModalCategory}
+                    placeholder="Category"
+                    style={modalDropdownStyle}
+                  />
+                </View>
+                
+                {/* Source Dropdown */}
+                <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 8 }}>Source</Text>
+                <View style={{ marginBottom: 20, width: '100%' }}>
+                  <AppDropdown
+                    items={[{ label: 'All Sources', value: 'all' }, ...accounts.map((account) => ({ label: account.name, value: account.id }))]}
+                    selectedValue={modalSource}
+                    onValueChange={setModalSource}
+                    placeholder="Source"
+                    style={modalDropdownStyle}
+                  />
+                </View>
+                
+                {/* Date Range Row */}
+                <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 8 }}>Date Range</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24, justifyContent: 'center' }}>
+                  <TouchableOpacity 
+                    onPress={() => { setShowModalDatePicker(true); setModalDatePickerMode('from'); }} 
+                    style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      backgroundColor: theme.colors.background, 
+                      borderRadius: 16, 
+                      paddingHorizontal: 16, 
+                      height: 44, 
+                      borderWidth: 1, 
+                      borderColor: theme.colors.border, 
+                      minWidth: 120, 
+                      justifyContent: 'center' 
+                    }}
+                  >
+                    <Calendar color={theme.colors.textSubtle} size={18} />
+                    <Text style={{ color: theme.colors.textMain, marginLeft: 8, fontFamily: theme.font.family.medium, fontSize: 14 }}>
+                      {modalDateRange.from ? new Date(modalDateRange.from).toLocaleDateString() : 'From'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => { setShowModalDatePicker(true); setModalDatePickerMode('to'); }} 
+                    style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      backgroundColor: theme.colors.background, 
+                      borderRadius: 16, 
+                      paddingHorizontal: 16, 
+                      height: 44, 
+                      borderWidth: 1, 
+                      borderColor: theme.colors.border, 
+                      minWidth: 120, 
+                      justifyContent: 'center' 
+                    }}
+                  >
+                    <Calendar color={theme.colors.textSubtle} size={18} />
+                    <Text style={{ color: theme.colors.textMain, marginLeft: 8, fontFamily: theme.font.family.medium, fontSize: 14 }}>
+                      {modalDateRange.to ? new Date(modalDateRange.to).toLocaleDateString() : 'To'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {showModalDatePicker && (
+                  <DateTimePicker
+                    value={modalDateRange[modalDatePickerMode] ? new Date(modalDateRange[modalDatePickerMode]) : new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowModalDatePicker(false);
+                      if (selectedDate) {
+                        setModalDateRange(prev => ({ ...prev, [modalDatePickerMode]: selectedDate }));
+                      }
+                    }}
+                  />
+                )}
+                
+                {/* Enhanced Action Row */}
+                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 0, justifyContent: 'center', width: '100%' }}>
+                  <TouchableOpacity 
+                    style={{ 
+                      flex: 1, 
+                      height: 48, 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      borderRadius: 12, 
+                      backgroundColor: theme.colors.accent,
+                      elevation: 2,
+                      shadowColor: theme.colors.accent,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 4
+                    }} 
+                    onPress={applyModalFilters}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15, textAlign: 'center', fontFamily: theme.font.family.medium }}>Apply Filters</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={{ 
+                      flex: 1, 
+                      height: 48, 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      borderRadius: 12, 
+                      backgroundColor: 'transparent', 
+                      borderWidth: 1, 
+                      borderColor: theme.colors.accent,
+                      elevation: 0 
+                    }} 
+                    onPress={() => {
+                      resetModalFilters();
+                      setShowFilterReset(true);
+                    }}
+                  >
+                    <Text style={{ color: theme.colors.accent, fontWeight: '700', fontSize: 15, textAlign: 'center', fontFamily: theme.font.family.medium }}>Reset</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Surface>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <AppModal
+        visible={deleteModalVisible}
+        onDismiss={() => {
+          setDeleteModalVisible(false);
+          setTransactionToDelete(null);
+        }}
+        title="Delete Transaction"
+        type="warning"
+        message={
+          transactionToDelete ? 
+          `Are you sure you want to delete "${transactionToDelete.title}"?\n\nThis will ${transactionToDelete.type === 'income' ? 'decrease' : 'increase'} the balance of "${accounts.find(acc => acc.id === transactionToDelete.sourceId)?.name || transactionToDelete.source}" by ${formatCurrency(transactionToDelete.amount)}.\n\nThis action cannot be undone.` :
+          ''
+        }
+        actions={[
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => {
+              setDeleteModalVisible(false);
+              setTransactionToDelete(null);
+            }
+          },
+          {
+            text: deleteLoading ? 'Deleting...' : 'Delete',
+            style: 'destructive',
+            onPress: confirmDelete
+          }
+        ]}
+        showCloseButton={false}
+        blurBackground={true}
+      />
     </View>
   );
 };

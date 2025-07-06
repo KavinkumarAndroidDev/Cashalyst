@@ -276,9 +276,9 @@ const SetupScreen = ({ navigation, route }) => {
           visible={showSuccess}
           onDismiss={() => setShowSuccess(false)}
           duration={1800}
-          style={{ backgroundColor: theme.colors.accent, marginBottom: 32 }}
+          style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
         >
-          <Text style={{ color: '#fff', fontFamily: theme.font.family.medium }}>{successMsg}</Text>
+          <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>{successMsg}</Text>
         </Snackbar>
       </View>
     </View>

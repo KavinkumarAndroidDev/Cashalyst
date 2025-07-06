@@ -12,13 +12,14 @@ import {
 import { TextInput, Surface, SegmentedButtons, Snackbar } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import useStore from '../hooks/useStore';
-import { generateId } from '../utils/formatCurrency';
+import { generateId, formatCurrency } from '../utils/formatCurrency';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
 import { PlusCircle, ArrowDownCircle, ArrowUpCircle, Calendar, Tag, Wallet, FileText, ArrowLeft } from 'lucide-react-native';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
+import AppModal from '../components/AppModal';
 
 const AddTransactionScreen = ({ navigation }) => {
   const { accounts, addTransaction, loading } = useStore();
@@ -34,6 +35,8 @@ const AddTransactionScreen = ({ navigation }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [localLoading, setLocalLoading] = useState(false);
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const transactionTypes = [
     { value: 'expense', label: 'Expense', icon: ArrowUpCircle },
@@ -70,19 +73,23 @@ const AddTransactionScreen = ({ navigation }) => {
     if (localLoading) return;
     // Validation
     if (!formData.title.trim()) {
-      Alert.alert('Error', 'Please enter a transaction title');
+      setErrorMessage('Please enter a transaction title');
+      setErrorModalVisible(true);
       return;
     }
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount');
+      setErrorMessage('Please enter a valid amount');
+      setErrorModalVisible(true);
       return;
     }
     if (!formData.category) {
-      Alert.alert('Error', 'Please select a category');
+      setErrorMessage('Please select a category');
+      setErrorModalVisible(true);
       return;
     }
     if (!formData.source) {
-      Alert.alert('Error', 'Please select a source');
+      setErrorMessage('Please select a source');
+      setErrorModalVisible(true);
       return;
     }
     setLocalLoading(true);
@@ -112,7 +119,8 @@ const AddTransactionScreen = ({ navigation }) => {
       // Await persistence
       await new Promise(res => setTimeout(res, 350)); // simulate fast feedback
     } catch (error) {
-      Alert.alert('Error', 'Failed to add transaction. Please try again.');
+      setErrorMessage('Failed to add transaction. Please try again.');
+      setErrorModalVisible(true);
     } finally {
       setLocalLoading(false);
     }
@@ -148,7 +156,7 @@ const AddTransactionScreen = ({ navigation }) => {
         <Surface style={{ borderRadius: theme.radii.card, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, padding: theme.spacing.lg, marginBottom: theme.spacing.xl }}>
           {/* Transaction Type */}
           <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Transaction type</Text>
-          <View style={{ flexDirection: 'row', marginBottom: theme.spacing.lg }}>
+          <View style={{ flexDirection: 'row', marginBottom: 24 }}>
             {transactionTypes.map(type => {
               const Icon = type.icon;
               const isActive = formData.type === type.value;
@@ -178,7 +186,7 @@ const AddTransactionScreen = ({ navigation }) => {
           </View>
           {/* Amount Input */}
           <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Enter amount</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
             <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 20, marginRight: 8 }}>₹</Text>
             <AppTextField
               value={formData.amount}
@@ -193,7 +201,7 @@ const AddTransactionScreen = ({ navigation }) => {
           <AppTextField
             value={formData.title}
             onChangeText={text => updateForm('title', text)}
-            style={{ marginBottom: theme.spacing.lg }}
+            style={{ marginBottom: 24 }}
             placeholder="e.g., Coffee, Salary, Groceries"
           />
           {/* Category Selection */}
@@ -202,7 +210,7 @@ const AddTransactionScreen = ({ navigation }) => {
             items={categories[formData.type]}
             selectedValue={formData.category}
             onValueChange={value => updateForm('category', value)}
-            style={{ marginBottom: theme.spacing.lg }}
+            style={{ marginBottom: 24 }}
           />
           {/* Source Selection */}
           <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Source</Text>
@@ -210,11 +218,90 @@ const AddTransactionScreen = ({ navigation }) => {
             items={accounts.map(account => ({ label: account.name, value: account.name }))}
             selectedValue={formData.source}
             onValueChange={value => updateForm('source', value)}
-            style={{ marginBottom: theme.spacing.lg }}
+            style={{ marginBottom: 24 }}
           />
+          {/* Account Balance Preview */}
+          {formData.source && formData.amount && (
+            <View style={{ 
+              backgroundColor: formData.type === 'expense' && parseFloat(formData.amount) > (accounts.find(acc => acc.name === formData.source)?.balance || 0) 
+                ? 'rgba(239, 68, 68, 0.08)' 
+                : 'rgba(59, 130, 246, 0.08)', 
+              borderRadius: 12, 
+              padding: 16, 
+              marginBottom: 24, 
+              borderWidth: 1, 
+              borderColor: formData.type === 'expense' && parseFloat(formData.amount) > (accounts.find(acc => acc.name === formData.source)?.balance || 0)
+                ? 'rgba(239, 68, 68, 0.2)'
+                : 'rgba(59, 130, 246, 0.2)' 
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={{ 
+                  fontFamily: theme.font.family.bold, 
+                  fontSize: 16, 
+                  color: theme.colors.textMain 
+                }}>
+                  Account Impact
+                </Text>
+              </View>
+              
+              <View style={{ marginBottom: 8 }}>
+                <Text style={{ 
+                  fontFamily: theme.font.family.medium, 
+                  fontSize: 14, 
+                  color: theme.colors.textSubtle, 
+                  marginBottom: 4 
+                }}>
+                  {formData.source} balance will change by:
+                </Text>
+                <Text style={{ 
+                  fontFamily: theme.font.family.bold, 
+                  fontSize: 18, 
+                  color: formData.type === 'income' ? '#10B981' : '#EF4444'
+                }}>
+                  {formData.type === 'income' ? '+' : '-'}{formatCurrency(parseFloat(formData.amount))}
+                </Text>
+              </View>
+              
+              {formData.type === 'expense' && parseFloat(formData.amount) > (accounts.find(acc => acc.name === formData.source)?.balance || 0) && (
+                <View style={{ 
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+                  borderRadius: 8, 
+                  padding: 12, 
+                  borderWidth: 1, 
+                  borderColor: 'rgba(239, 68, 68, 0.2)',
+                  marginTop: 8
+                }}>
+                  <Text style={{ color: '#EF4444', fontFamily: theme.font.family.bold, fontSize: 14, marginBottom: 4 }}>
+                    Insufficient Balance
+                  </Text>
+                  <Text style={{ color: '#EF4444', fontFamily: theme.font.family.medium, fontSize: 13 }}>
+                    Current: {formatCurrency(accounts.find(acc => acc.name === formData.source)?.balance || 0)} • Shortfall: {formatCurrency(parseFloat(formData.amount) - (accounts.find(acc => acc.name === formData.source)?.balance || 0))}
+                  </Text>
+                </View>
+              )}
+              
+              {formData.type === 'expense' && parseFloat(formData.amount) <= (accounts.find(acc => acc.name === formData.source)?.balance || 0) && (
+                <View style={{ 
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                  borderRadius: 8, 
+                  padding: 12, 
+                  borderWidth: 1, 
+                  borderColor: 'rgba(16, 185, 129, 0.2)',
+                  marginTop: 8
+                }}>
+                  <Text style={{ color: '#10B981', fontFamily: theme.font.family.bold, fontSize: 14, marginBottom: 4 }}>
+                    Sufficient Balance
+                  </Text>
+                  <Text style={{ color: '#10B981', fontFamily: theme.font.family.medium, fontSize: 13 }}>
+                    Remaining: {formatCurrency((accounts.find(acc => acc.name === formData.source)?.balance || 0) - parseFloat(formData.amount))}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
           {/* Date Input */}
           <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Date</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
             <Calendar color={theme.colors.textSubtle} size={20} style={{ marginRight: 8 }} />
             <AppTextField
               value={formData.date}
@@ -228,7 +315,7 @@ const AddTransactionScreen = ({ navigation }) => {
           <AppTextField
             value={formData.note}
             onChangeText={text => updateForm('note', text)}
-            style={{ marginBottom: theme.spacing.lg }}
+            style={{ marginBottom: 24 }}
             placeholder="Add a note..."
           />
         </Surface>
@@ -247,10 +334,28 @@ const AddTransactionScreen = ({ navigation }) => {
         visible={showSuccess}
         onDismiss={() => setShowSuccess(false)}
         duration={1800}
-        style={{ backgroundColor: theme.colors.accent, marginBottom: 32, alignSelf: 'center', borderRadius: 16, minWidth: 260, maxWidth: 340, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}
+        style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
       >
         <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction added successfully</Text>
       </Snackbar>
+
+      {/* Custom Error Modal */}
+      <AppModal
+        visible={errorModalVisible}
+        onDismiss={() => setErrorModalVisible(false)}
+        title="Error"
+        type="error"
+        message={errorMessage}
+        actions={[
+          {
+            text: 'OK',
+            style: 'primary',
+            onPress: () => setErrorModalVisible(false)
+          }
+        ]}
+        showCloseButton={false}
+        blurBackground={true}
+      />
     </View>
   );
 };

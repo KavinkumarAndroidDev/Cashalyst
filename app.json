@@ -2,7 +2,7 @@
   "expo": {
     "name": "Cashalyst",
     "slug": "Cashalyst",
-    "version": "1.6.0", 
+    "version": "1.7.0", 
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "android": {
       "edgeToEdgeEnabled": true,
       "package": "com.kavinkumar_r.Cashaly",
-      "versionCode": 6         
+      "versionCode": 8         
     },
     "web": {
       "favicon": "./assets/logo.png"

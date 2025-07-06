@@ -5,23 +5,26 @@ A simple yet powerful personal finance tracking app built with React Native and 
 ## Features
 
 ### 🏠 Home Dashboard
-- **Total Balance**: View your overall financial position across all accounts
+- **Total Balance**: View your overall financial position across all accounts with smooth animations
 - **Monthly Summary**: Quick overview of income, expenses, and savings for the current month
 - **Account Balances**: See individual balances for each money source (Cash, GPay, Bank)
-- **Recent Transactions**: Last 5 transactions with quick access to full history
+- **Recent Transactions**: Last 5 transactions with improved visual hierarchy and better spacing
+- **Quick Actions**: Easy access to add transactions and view history
 
 ### ➕ Add Transactions
-- **Simple Form**: Easy input for daily transactions
+- **Simple Form**: Easy input for daily transactions with consistent spacing
 - **Transaction Types**: Income or Expense with color-coded indicators
 - **Categories**: Predefined categories for both income and expenses
 - **Multiple Sources**: Track transactions across different accounts
+- **Account Impact Preview**: Real-time balance validation and warnings
 - **Optional Notes**: Add context to your transactions
 
 ### 📋 Transaction History
-- **Search & Filter**: Find transactions by category, type, or source
+- **Search & Filter**: Find transactions by category, type, or source with enhanced filter modal
 - **Date-based Viewing**: Browse transactions chronologically
-- **Delete Transactions**: Remove incorrect entries with confirmation
+- **Delete Transactions**: Remove incorrect entries with themed confirmation popups
 - **Pull to Refresh**: Update data with a simple swipe
+- **Improved UI**: Better transaction cards with circular icons and cleaner layout
 
 ### 📊 Insights & Analytics
 - **Category Spending**: Pie chart showing where your money goes
@@ -29,6 +32,13 @@ A simple yet powerful personal finance tracking app built with React Native and 
 - **Balance Trends**: Line chart tracking your financial growth
 - **Monthly Selector**: View insights for different months
 - **Account Breakdown**: Individual account balance tracking
+
+### 🎨 Enhanced User Experience
+- **Custom Modal System**: Themed popups replacing native alerts
+- **Balance Validation**: Real-time warnings for insufficient funds
+- **Smooth Animations**: Balance change animations and transitions
+- **Consistent Spacing**: Standardized margins and padding throughout
+- **Better Visual Hierarchy**: Improved typography and layout consistency
 
 ## Tech Stack
 
@@ -38,7 +48,9 @@ A simple yet powerful personal finance tracking app built with React Native and 
 - **State Management**: Zustand
 - **Database**: SQLite (expo-sqlite)
 - **Charts**: React Native Chart Kit
-- **Forms**: React Hook Form (planned)
+- **Forms**: React Hook Form
+- **Icons**: Lucide React Native
+- **Blur Effects**: Expo Blur
 
 ## Installation & Setup
 
@@ -78,16 +90,29 @@ Cashalyst/
 ├── screens/                 # Main app screens
 │   ├── HomeScreen.jsx      # Dashboard with overview
 │   ├── AddTransactionScreen.jsx  # Transaction input form
+│   ├── EditTransactionScreen.jsx # Transaction editing
 │   ├── HistoryScreen.jsx   # Transaction history & search
-│   └── InsightsScreen.jsx  # Analytics & charts
+│   ├── InsightsScreen.jsx  # Analytics & charts
+│   ├── AccountsScreen.jsx  # Account management
+│   └── SetupScreen.jsx     # Initial setup
 ├── components/             # Reusable UI components
+│   ├── AppButton.jsx       # Custom button component
+│   ├── AppTextField.jsx    # Custom text input
+│   ├── AppDropdown.jsx     # Custom dropdown
+│   ├── AppSearchBar.jsx    # Search functionality
+│   ├── AppSegmentedButton.jsx # Segmented controls
+│   ├── AppModal.jsx        # Custom modal system
+│   └── SplashScreen.jsx    # App splash screen
 ├── hooks/                  # Custom React hooks
 │   └── useStore.js        # Zustand state management
 ├── db/                     # Database layer
 │   ├── initDB.js          # Database initialization
-│   └── transactionService.js  # Database operations
+│   ├── transactionService.js  # Database operations
+│   └── asyncStorageService.js # Local storage
 ├── utils/                  # Utility functions
-│   └── formatCurrency.js  # Currency & date formatting
+│   ├── formatCurrency.js  # Currency & date formatting
+│   ├── scale.js           # Responsive scaling
+│   └── theme.js           # App theming
 ├── App.js                  # Main app component
 └── README.md              # This file
 ```
@@ -100,6 +125,7 @@ Cashalyst/
 - `type`: 'income' or 'expense'
 - `category`: Transaction category
 - `source`: Account/source identifier
+- `sourceId`: Account ID reference
 - `note`: Optional transaction note
 - `date`: Transaction date
 - `created_at`: Timestamp
@@ -125,8 +151,9 @@ The app comes with three default accounts:
 3. Select transaction type (Income/Expense)
 4. Choose a category from the dropdown
 5. Select the source account
-6. Add an optional note
-7. Tap "Save Transaction"
+6. Review the account impact preview
+7. Add an optional note
+8. Tap "Save Transaction"
 
 ### Viewing Insights
 1. Navigate to the "Insights" tab
@@ -138,7 +165,13 @@ The app comes with three default accounts:
 1. Go to "Transaction History" to see all entries
 2. Use search to find specific transactions
 3. Apply filters by type, category, or source
-4. Delete incorrect transactions with confirmation
+4. Edit or delete transactions with themed confirmations
+
+### Account Management
+1. Access account settings from the home screen
+2. View individual account balances
+3. Monitor account-specific transactions
+4. Track balance changes over time
 
 ## Future Enhancements
 
@@ -151,6 +184,8 @@ The app comes with three default accounts:
 - [ ] Multiple currency support
 - [ ] Bill reminders
 - [ ] Financial goals tracking
+- [ ] Transaction templates
+- [ ] Advanced analytics
 
 ### Technical Improvements
 - [ ] Offline-first architecture
@@ -158,6 +193,8 @@ The app comes with three default accounts:
 - [ ] Unit and integration tests
 - [ ] Accessibility improvements
 - [ ] Internationalization (i18n)
+- [ ] Push notifications
+- [ ] Data backup/restore
 
 ## Contributing
 
@@ -185,6 +222,7 @@ If you encounter any issues or have questions:
 - Charts powered by React Native Chart Kit
 - State management with Zustand
 - Database operations with SQLite
+- Icons from Lucide React Native
 
 ---
 
