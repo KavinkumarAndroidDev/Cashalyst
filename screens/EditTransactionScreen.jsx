@@ -135,7 +135,13 @@ const EditTransactionScreen = ({ navigation, route }) => {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <AppButton
             style={{ width: 40, height: 40, borderRadius: theme.radii.button, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.navigate('Main', { screen: 'History' });
+              }
+            }}
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
           </AppButton>

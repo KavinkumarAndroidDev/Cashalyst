@@ -248,6 +248,10 @@ export default function App() {
                 <Stack.Screen 
                   name="EditTransaction" 
                   component={EditTransactionScreen}
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                  }}
                 />
               </>
             )}
