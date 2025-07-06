@@ -5,7 +5,9 @@ import {
   ScrollView,
   StatusBar,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Surface, SegmentedButtons } from 'react-native-paper';
 import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 import useStore from '../hooks/useStore';
@@ -18,7 +20,7 @@ import {
   TrendingDown,
   PiggyBank,
   ShoppingCart,
-  Utensils,
+  Coffee,
   Film,
   Banknote,
   Calendar,
@@ -37,7 +39,7 @@ import AppSegmentedButton from '../components/AppSegmentedButton';
 const { width } = Dimensions.get('window');
 
 const CATEGORY_ICONS = {
-  'Food & Dining': Utensils,
+  'Food & Dining': Coffee,
   'Transportation': Car,
   'Shopping': ShoppingCart,
   'Entertainment': Film,
@@ -281,10 +283,10 @@ const InsightsScreen = ({ navigation }) => {
   const isValidDataArray = arr => Array.isArray(arr) && arr.length > 0 && arr.every(isValidNumber);
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
       {/* Header */}
-      <View style={{ paddingTop: 60, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
+      <View style={{ paddingTop: 20, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <AppButton
             style={{ width: 40, height: 40, borderRadius: theme.radii.button, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
@@ -303,7 +305,7 @@ const InsightsScreen = ({ navigation }) => {
           <AppSegmentedButton items={periods.map(p=>p.label)} selectedIndex={periods.findIndex(p=>p.value===selectedPeriod)} onSelect={(index)=>setSelectedPeriod(periods[index].value)} />
         </Surface>
         {/* Summary Cards */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.lg, marginBottom: 8 }}>Overview ({periods.find(p=>p.value===selectedPeriod).label})</Text>
+        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Overview ({periods.find(p=>p.value===selectedPeriod).label})</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
           <Surface style={[theme.card, { flex: 1, alignItems: 'center', padding: theme.spacing.md  }]}> //marginRight: theme.spacing.md
             <TrendingUp color={theme.colors.accent} size={18} style={{ marginBottom: 4 }} />
@@ -368,7 +370,7 @@ const InsightsScreen = ({ navigation }) => {
           )}
         </Surface>
         {/* Category Breakdown */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.lg, marginBottom: 8 }}>Expense by Category</Text>
+        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Expense by Category</Text>
         <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}> {/* Chart container */}
           {categoryBreakdown.length > 0 && isValidDataArray(categoryBreakdown.map(c => c.amount)) ? (
             <PieChart
@@ -391,7 +393,7 @@ const InsightsScreen = ({ navigation }) => {
           )}
         </Surface>
         {/* Source Breakdown */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.lg, marginBottom: 8 }}>Transactions by Source</Text>
+        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Transactions by Source</Text>
         <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}> {/* Chart container */}
           {sourceBreakdown.length > 0 && isValidDataArray(sourceBreakdown.map(s => s.amount)) ? (
             <BarChart
@@ -420,7 +422,7 @@ const InsightsScreen = ({ navigation }) => {
           )}
         </Surface>
         {/* Top Categories List */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.lg, marginBottom: 8 }}>Top Expense Categories</Text>
+        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Top Expense Categories</Text>
         {categoryBreakdown.length > 0 ? (
           categoryBreakdown.map((category, index) => (
             <Surface key={category.name} style={[theme.card, { flexDirection: 'row', alignItems: 'center', padding: theme.spacing.md, marginBottom: theme.spacing.md }]}> 
@@ -448,7 +450,7 @@ const InsightsScreen = ({ navigation }) => {
           </Surface>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

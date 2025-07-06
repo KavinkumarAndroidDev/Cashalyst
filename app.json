@@ -2,12 +2,17 @@
   "expo": {
     "name": "Cashalyst",
     "slug": "Cashalyst",
-    "version": "1.7.0", 
+    "version": "2.0.0", 
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kkdev.cashalyst",
+      "infoPlist": {
+        "NSUserNotificationUsageDescription": "This app uses notifications to remind you about your financial goals and transactions.",
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "splash": {
       "image": "./assets/splash.png", 
@@ -16,14 +21,35 @@
     },
     "android": {
       "edgeToEdgeEnabled": true,
-      "package": "com.kavinkumar_r.Cashaly",
-      "versionCode": 8         
+      "package": "com.kkdev.cashalyst",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/logo.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo.png",
+          "color": "#3B82F6"
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ]
     ],
     "extra": {
       "eas": {

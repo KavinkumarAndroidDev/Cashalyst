@@ -1,6 +1,6 @@
 {
   "name": "cashalyst",
-  "version": "1.7.0",
+  "version": "2.0.0",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
@@ -11,14 +11,21 @@
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/datetimepicker": "8.3.0",
     "@react-native-picker/picker": "^2.11.1",
     "@react-navigation/bottom-tabs": "^7.3.17",
     "@react-navigation/native": "^7.1.13",
     "@react-navigation/stack": "^7.3.6",
     "expo": "~53.0.12",
     "expo-blur": "~14.1.5",
+    "expo-document-picker": "^13.1.6",
+    "expo-file-system": "^18.1.11",
     "expo-font": "~13.3.1",
     "expo-linear-gradient": "^14.1.5",
+    "expo-media-library": "^17.1.7",
+    "expo-navigation-bar": "~4.2.6",
+    "expo-notifications": "~0.29.3",
+    "expo-sharing": "^13.1.5",
     "expo-sqlite": "^15.2.12",
     "expo-status-bar": "~2.2.3",
     "lucide-react-native": "^0.519.0",
@@ -32,9 +39,7 @@
     "react-native-safe-area-context": "^5.4.1",
     "react-native-screens": "^4.11.1",
     "react-native-svg": "^15.12.0",
-    "zustand": "^5.0.5",
-    "@react-native-community/datetimepicker": "8.3.0",
-    "expo-navigation-bar": "~4.2.6"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

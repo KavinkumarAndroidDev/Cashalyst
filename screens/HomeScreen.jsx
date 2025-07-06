@@ -11,26 +11,30 @@ import {
 } from 'react-native';
 import { Surface, FAB } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import useStore from '../hooks/useStore';
 import { formatCurrency } from '../utils/formatCurrency';
-import { ArrowLeft, Plus, TrendingUp, TrendingDown, Calendar, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, FileText, Book, ArrowDownCircle, ArrowUpCircle, Wallet, PlusCircle, List, BarChart2 } from 'lucide-react-native';
+import { Home, PlusCircle, List, BarChart2, Wallet, TrendingUp, TrendingDown, PiggyBank, Settings, Coffee, Car, ShoppingCart, Film, Banknote, Book, FileText } from 'lucide-react-native';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import notificationService from '../utils/notificationService';
 
 const { width } = Dimensions.get('window');
 
 const CATEGORY_ICONS = {
-  'Food & Dining': Utensils,
+  'Food & Dining': Coffee,
   'Transportation': Car,
   'Shopping': ShoppingCart,
   'Entertainment': Film,
   'Bills & Utilities': Banknote,
-  'Healthcare': FileText,
   'Education': Book,
-  'Travel': Calendar,
+  'Salary': PiggyBank,
+  'Freelance': FileText,
+  'Investment': TrendingUp,
   'Other': PiggyBank,
 };
 
@@ -59,6 +63,7 @@ const HomeScreen = ({ navigation }) => {
   });
   const [balanceAnimation] = useState(new Animated.Value(1));
   const [lastBalance, setLastBalance] = useState(0);
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     const currentStats = getStats();
@@ -82,6 +87,15 @@ const HomeScreen = ({ navigation }) => {
     setLastBalance(currentStats.totalBalance);
   }, [accounts, transactions]);
 
+  useEffect(() => {
+    (async () => {
+      const saved = await AsyncStorage.getItem('username');
+      if (saved) setUsername(saved);
+      // Request notification permission on first launch
+      await notificationService.initialize();
+    })();
+  }, []);
+
   const recentTransactions = transactions
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 5);
@@ -95,22 +109,48 @@ const HomeScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="light-content" />
       
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={[styles.greeting, { fontFamily: 'Inter_400Regular' }]}>Welcome back</Text>
-            <Text style={[styles.headerTitle, { fontFamily: 'Inter_700Bold' }]}>Your Financial Overview</Text>
+            <Text style={[styles.greeting, { fontFamily: 'Inter_500Medium', fontSize: 15, color: theme.colors.textSubtle }]}>Welcome back</Text>
+            {/* Only show app name if no username */}
+            {!username && <Text style={[styles.headerTitle, { fontFamily: 'Inter_700Bold' }]}>Cashalyst</Text>}
+            {username && (
+              <Text style={[styles.headerTitle, { fontFamily: 'Inter_700Bold', fontSize: 24, color: theme.colors.textMain }]}>{username.trim().split(' ')[0]}</Text>
+            )}
           </View>
-          <TouchableOpacity
-            style={styles.accountsButton}
-            onPress={() => navigation.navigate('Accounts')}
-          >
-            <Wallet color="#3B82F6" size={22} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {username ? (
+              <TouchableOpacity
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: theme.colors.accent,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 2,
+                }}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Settings')}
+              >
+                <Text style={{ color: theme.colors.buttonText || '#fff', fontFamily: 'Inter_700Bold', fontSize: 18 }}>
+                  {username.trim().charAt(0).toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.accountsButton, { width: 40, height: 40, paddingHorizontal: 0, alignItems: 'center', justifyContent: 'center' }]}
+                onPress={() => navigation.navigate('Settings')}
+              >
+                <Settings color="#F9FAFB" size={20} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
 
@@ -262,7 +302,7 @@ const HomeScreen = ({ navigation }) => {
         onPress={() => navigation.navigate('AddTransaction')}
         color="#fff"
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -272,7 +312,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
   },
   header: {
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 24,
     paddingHorizontal: 20,
     backgroundColor: '#0F172A',

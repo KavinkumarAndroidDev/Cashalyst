@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,14 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Surface, SegmentedButtons, Snackbar } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import useStore from '../hooks/useStore';
 import { generateId, formatCurrency } from '../utils/formatCurrency';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
-import { PlusCircle, ArrowDownCircle, ArrowUpCircle, Calendar, Tag, Wallet, FileText, ArrowLeft } from 'lucide-react-native';
+import { PlusCircle, ArrowDownCircle, ArrowUpCircle, Calendar, Tag, Wallet, FileText, ArrowLeft, Trash2 } from 'lucide-react-native';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
@@ -128,10 +129,10 @@ const EditTransactionScreen = ({ navigation, route }) => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
       {/* Header */}
-      <View style={{ paddingTop: 60, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
+      <View style={{ paddingTop: 20, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <AppButton
             style={{ width: 40, height: 40, borderRadius: theme.radii.button, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
@@ -183,7 +184,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
           </View>
           {/* Amount Input */}
           <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Enter amount</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
             <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 20, marginRight: 8 }}>₹</Text>
             <AppTextField
               value={formData.amount}
@@ -354,7 +355,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
         showCloseButton={false}
         blurBackground={true}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

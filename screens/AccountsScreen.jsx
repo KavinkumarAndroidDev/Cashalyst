@@ -9,6 +9,7 @@ import {
   Modal,
   Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Surface, FAB, Snackbar } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import useStore from '../hooks/useStore';
@@ -17,7 +18,7 @@ import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
 import AppModal from '../components/AppModal';
-import { ArrowLeft, PiggyBank, Utensils, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, CreditCard, Pencil, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, PiggyBank, Coffee, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, CreditCard, Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
 
@@ -65,11 +66,11 @@ const AccountsScreen = ({ navigation }) => {
   }, [accounts]);
 
   const sourceTypes = {
-    upi: { label: 'UPI / Digital Wallet', icon: '💳', color: '#3B82F6' },
-    bank: { label: 'Bank Account', icon: '🏦', color: '#8B5CF6' },
-    cash: { label: 'Cash', icon: '💵', color: '#10B981' },
-    wallet: { label: 'Digital Wallet', icon: '📱', color: '#F59E0B' },
-    custom: { label: 'Custom', icon: '🎯', color: '#EF4444' },
+    upi: { label: 'UPI', color: '#3B82F6' },
+    bank: { label: 'Bank Account', color: '#8B5CF6' },
+    cash: { label: 'Cash', color: '#10B981' },
+    wallet: { label: 'Digital Wallet', color: '#F59E0B' },
+    custom: { label: 'Custom', color: '#EF4444' },
   };
 
   const resetForm = () => {
@@ -116,7 +117,6 @@ const AccountsScreen = ({ navigation }) => {
       const accountData = {
         name: formData.name.trim(),
         type: formData.type,
-        icon: sourceTypes[formData.type].icon,
         balance: parseFloat(formData.balance),
       };
       // Optimistically close modal and show success
@@ -186,11 +186,11 @@ const AccountsScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
+      <StatusBar barStyle="light-content" />
       
       {/* Header */}
-      <View style={styles.header}>
+      <View style={{ paddingTop: 20, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
         <View style={styles.headerContent}>
           <AppButton
             style={styles.backButton}
@@ -306,7 +306,7 @@ const AccountsScreen = ({ navigation }) => {
         {/* Empty State */}
         {accounts.length === 0 && (
           <Surface style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>💳</Text>
+            <CreditCard color={theme.colors.textSubtle} size={48} style={{ marginBottom: 16 }} />
             <Text style={styles.emptyTitle}>No money sources yet</Text>
             <Text style={styles.emptyText}>
               Add your first money source to start tracking your finances
@@ -345,7 +345,7 @@ const AccountsScreen = ({ navigation }) => {
               <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Account Type</Text>
               <AppDropdown
                 items={Object.entries(sourceTypes).map(([key, type]) => ({
-                  label: `${type.icon} ${type.label}`,
+                  label: type.label,
                   value: key,
                 }))}
                 selectedValue={formData.type}
@@ -422,7 +422,7 @@ const AccountsScreen = ({ navigation }) => {
         showCloseButton={false}
         blurBackground={true}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

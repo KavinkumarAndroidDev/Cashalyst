@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Platform, Text, TouchableOpacity, Modal, ScrollView, FlatList } from 'react-native';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDown, Check } from 'lucide-react-native';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
 
@@ -89,12 +89,17 @@ const AppDropdown = ({
                       onPress={() => handleSelect(item)}
                       activeOpacity={0.7}
                     >
+                      <View style={styles.dropdownItemContent}>
                       <Text style={[
                         styles.dropdownItemText,
                         isSelected && styles.dropdownItemTextSelected
                       ]}>
                         {label}
                       </Text>
+                        {isSelected && (
+                          <Check color={theme.colors.accent} size={16} />
+                        )}
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
@@ -179,7 +184,11 @@ const styles = StyleSheet.create({
   },
   dropdownItemSelected: {
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderBottomColor: theme.colors.accent,
+  },
+  dropdownItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   dropdownItemText: {
     color: theme.colors.textSubtle,

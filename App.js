@@ -5,7 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { BlurView } from 'expo-blur';
-import { Home, PlusCircle, List, BarChart2, Wallet } from 'lucide-react-native';
+import { Home, PlusCircle, List, BarChart2, Wallet, Settings } from 'lucide-react-native';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initDatabase } from './db/asyncStorageService';
@@ -17,6 +17,7 @@ import HistoryScreen from './screens/HistoryScreen';
 import InsightsScreen from './screens/InsightsScreen';
 import AccountsScreen from './screens/AccountsScreen';
 import EditTransactionScreen from './screens/EditTransactionScreen';
+import SettingsScreen from './screens/SettingsScreen';
 import 'react-native-gesture-handler';
 import useStore from './hooks/useStore';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -53,6 +54,8 @@ function MainTabNavigator() {
               IconComponent = BarChart2;
             } else if (route.name === 'Accounts') {
               IconComponent = Wallet;
+            } else if (route.name === 'Settings') {
+              IconComponent = Settings;
             }
             return <IconComponent color={color} size={iconSize} strokeWidth={focused ? 2.4 : 2} />;
           },
@@ -208,6 +211,10 @@ export default function App() {
       setInitialRoute('Setup');
       setCurrentRoute('Setup');
     };
+    global.showMainScreen = () => {
+      setInitialRoute('Main');
+      setCurrentRoute('Main');
+    };
   }
 
   // Show loading screen only if fonts aren't loaded or app is initializing
@@ -237,7 +244,6 @@ export default function App() {
               <Stack.Screen 
                 name="Setup" 
                 component={SetupScreen}
-                initialParams={{ onSetupComplete: handleSetupComplete }}
               />
             ) : (
               <>
@@ -250,6 +256,13 @@ export default function App() {
                   component={EditTransactionScreen}
                   options={{
                     presentation: 'modal',
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen 
+                  name="Settings" 
+                  component={SettingsScreen}
+                  options={{
                     headerShown: false,
                   }}
                 />

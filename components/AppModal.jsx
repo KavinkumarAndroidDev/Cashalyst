@@ -19,7 +19,8 @@ const AppModal = ({
   type = 'info', // 'info', 'success', 'warning', 'error'
   actions = [],
   showCloseButton = true,
-  blurBackground = false
+  blurBackground = false,
+  children
 }) => {
   const getIcon = () => {
     switch (type) {
@@ -85,6 +86,7 @@ const AppModal = ({
             <View style={styles.content}>
               <Text style={styles.title}>{title}</Text>
               {message && <Text style={styles.message}>{message}</Text>}
+              {children}
             </View>
 
             {/* Actions */}
@@ -140,6 +142,7 @@ const AppModal = ({
             <View style={styles.content}>
               <Text style={styles.title}>{title}</Text>
               {message && <Text style={styles.message}>{message}</Text>}
+              {children}
             </View>
 
             {/* Actions */}
