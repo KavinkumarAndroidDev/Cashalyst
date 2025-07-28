@@ -289,7 +289,7 @@ const InsightsScreen = ({ navigation }) => {
       <View style={{ paddingTop: 20, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <AppButton
-            style={{ width: 40, height: 40, borderRadius: theme.radii.button, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
+            style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
             onPress={() => navigation.goBack()}
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
@@ -307,7 +307,7 @@ const InsightsScreen = ({ navigation }) => {
         {/* Summary Cards */}
         <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Overview ({periods.find(p=>p.value===selectedPeriod).label})</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
-          <Surface style={[theme.card, { flex: 1, alignItems: 'center', padding: theme.spacing.md  }]}> //marginRight: theme.spacing.md
+          <Surface style={[theme.card, { flex: 1, alignItems: 'center', padding: theme.spacing.md  }]}>
             <TrendingUp color={theme.colors.accent} size={18} style={{ marginBottom: 4 }} />
             <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.income)}</Text>
             <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Income</Text>
@@ -325,7 +325,7 @@ const InsightsScreen = ({ navigation }) => {
         </View>
         {/* Trend Chart */}
         <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginBottom: 8 }}>{periods.find(p=>p.value===selectedPeriod).label} Trend</Text>
-        <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}> {/* Chart container */}
+        <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}>
           {trendData.labels.length > 0 &&
             trendData.datasets.every(ds => isValidDataArray(ds.data)) ? (
             <>
@@ -371,7 +371,7 @@ const InsightsScreen = ({ navigation }) => {
         </Surface>
         {/* Category Breakdown */}
         <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Expense by Category</Text>
-        <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}> {/* Chart container */}
+        <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}>
           {categoryBreakdown.length > 0 && isValidDataArray(categoryBreakdown.map(c => c.amount)) ? (
             <PieChart
               data={categoryBreakdown}
@@ -394,7 +394,7 @@ const InsightsScreen = ({ navigation }) => {
         </Surface>
         {/* Source Breakdown */}
         <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Transactions by Source</Text>
-        <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}> {/* Chart container */}
+        <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}>
           {sourceBreakdown.length > 0 && isValidDataArray(sourceBreakdown.map(s => s.amount)) ? (
             <BarChart
               data={{

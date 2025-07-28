@@ -208,6 +208,11 @@ class NotificationService {
         await this.initialize();
       }
 
+      // Don't schedule if no trigger is provided
+      if (!trigger) {
+        throw new Error('No trigger provided for notification');
+      }
+
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title,
@@ -215,7 +220,7 @@ class NotificationService {
           sound: true,
           priority: Notifications.AndroidNotificationPriority.HIGH,
         },
-        trigger: trigger || { seconds: 1 }, // Default to 1 second from now
+        trigger: trigger,
       });
 
       return notificationId;
@@ -227,12 +232,22 @@ class NotificationService {
 
   async scheduleDailyReminder(hour = 20, minute = 0) {
     try {
+      // Calculate the next occurrence of this time
+      const now = new Date();
+      const scheduledTime = new Date();
+      scheduledTime.setHours(hour, minute, 0, 0);
+      
+      // If the time has passed today, schedule for tomorrow
+      if (scheduledTime <= now) {
+        scheduledTime.setDate(scheduledTime.getDate() + 1);
+      }
+      
       await this.scheduleNotification(
         '💰 Daily Finance Check-in',
         'Take a moment to review your spending and update your transactions.',
         {
-          hour,
-          minute,
+          hour: scheduledTime.getHours(),
+          minute: scheduledTime.getMinutes(),
           repeats: true,
         }
       );
@@ -244,14 +259,29 @@ class NotificationService {
 
   async scheduleWeeklyReport(dayOfWeek = 1, hour = 9, minute = 0) {
     try {
+      // Calculate the next occurrence of this weekday and time
+      const now = new Date();
+      const scheduledTime = new Date();
+      scheduledTime.setHours(hour, minute, 0, 0);
+      
+      // Calculate days until next occurrence of the specified weekday
+      const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const targetDay = dayOfWeek; // 1 = Monday
+      let daysUntilTarget = targetDay - currentDay;
+      
+      // If today is the target day but time has passed, or if target day is before current day
+      if (daysUntilTarget <= 0 && scheduledTime <= now) {
+        daysUntilTarget += 7; // Schedule for next week
+      }
+      
+      scheduledTime.setDate(scheduledTime.getDate() + daysUntilTarget);
+      
       await this.scheduleNotification(
         '📊 Weekly Finance Report',
         'Your weekly spending summary is ready. Check your insights!',
         {
-          weekday: dayOfWeek, // Monday
-          hour,
-          minute,
-          repeats: true,
+          date: scheduledTime, // Use specific date instead of weekday
+          repeats: false, // We'll handle repeating manually
         }
       );
     } catch (error) {
@@ -262,21 +292,57 @@ class NotificationService {
 
   async enableSmartNotifications() {
     try {
-      // Cancel existing notifications
-      await this.cancelAllNotifications();
+      // First check if permission is actually granted
+      const { status } = await Notifications.getPermissionsAsync();
       
-      // Schedule smart daily notification
-      await this.scheduleSmartNotification();
+      if (status !== 'granted') {
+        throw new Error('Notification permission not granted');
+      }
       
-      // Schedule weekly report
-      await this.scheduleWeeklyReport();
+      // Cancel ALL existing notifications first
+      await Notifications.cancelAllScheduledNotificationsAsync();
       
-      console.log('Smart notifications enabled');
+      // Wait a moment to ensure cancellation is complete
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Schedule ONLY ONE notification for tomorrow at 8 PM
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(20, 0, 0, 0);
+      
+      // Make sure the time is in the future
+      if (tomorrow.getTime() <= Date.now()) {
+        tomorrow.setDate(tomorrow.getDate() + 1); // Move to day after tomorrow
+      }
+      
+      // Use Notifications.scheduleNotificationAsync directly to avoid any issues
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '💰 Daily Finance Check-in',
+          body: 'Take a moment to review your spending and update your transactions.',
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+        },
+        trigger: {
+          date: tomorrow,
+        },
+      });
+      
+      console.log('Notification scheduled with ID:', notificationId);
+      
+      // Save that notifications are enabled in our own storage
+      await AsyncStorage.setItem('notifications_enabled', 'true');
+      await AsyncStorage.setItem('notification_scheduled_date', tomorrow.toISOString());
+      
+      console.log('Notification state saved to storage');
+      
     } catch (error) {
       console.error('Failed to enable smart notifications:', error);
       throw error;
     }
   }
+
+
 
   async cancelAllNotifications() {
     try {
@@ -285,6 +351,12 @@ class NotificationService {
       this.notificationCount = 0;
       this.lastNotificationDate = new Date().toDateString();
       await this.saveNotificationState();
+      
+      // Save that notifications are disabled in our own storage
+      await AsyncStorage.setItem('notifications_enabled', 'false');
+      await AsyncStorage.removeItem('notification_scheduled_date');
+      
+      console.log('Notifications cancelled and state saved to storage');
     } catch (error) {
       console.error('Failed to cancel notifications:', error);
       throw error;
@@ -293,7 +365,9 @@ class NotificationService {
 
   async getPendingNotifications() {
     try {
-      return await Notifications.getAllScheduledNotificationsAsync();
+      const notifications = await Notifications.getAllScheduledNotificationsAsync();
+      console.log('Pending notifications:', notifications);
+      return notifications;
     } catch (error) {
       console.error('Failed to get pending notifications:', error);
       return [];
@@ -310,33 +384,34 @@ class NotificationService {
     }
   }
 
-  // Demo function to test smart notifications immediately
-  async sendDemoNotification() {
-    try {
-      if (!this.isInitialized) {
-        await this.initialize();
-      }
 
-      const message = this.getRandomMessage();
-      await this.scheduleNotification(
-        '💰 Cashalyst Demo',
-        message,
-        { seconds: 3 } // Send in 3 seconds
-      );
-
-      return message;
-    } catch (error) {
-      console.error('Failed to send demo notification:', error);
-      throw error;
-    }
-  }
 
   // Get notification stats for user
   async getNotificationStats() {
     try {
-      const pendingNotifications = await this.getPendingNotifications();
+      // Check our own storage for notification state
+      const notificationsEnabled = await AsyncStorage.getItem('notifications_enabled');
+      const scheduledDate = await AsyncStorage.getItem('notification_scheduled_date');
+      
+      console.log('Storage state:', { notificationsEnabled, scheduledDate });
+      
+      // If we have a scheduled date, check if it's still in the future
+      let hasActiveNotifications = false;
+      if (scheduledDate && notificationsEnabled === 'true') {
+        const scheduledTime = new Date(scheduledDate);
+        const now = new Date();
+        hasActiveNotifications = scheduledTime > now;
+        
+        // If the scheduled time has passed, clear the storage
+        if (!hasActiveNotifications) {
+          await AsyncStorage.setItem('notifications_enabled', 'false');
+          await AsyncStorage.removeItem('notification_scheduled_date');
+          console.log('Cleared expired notification state');
+        }
+      }
+      
       return {
-        pendingCount: pendingNotifications.length,
+        pendingCount: hasActiveNotifications ? 1 : 0,
         dailyCount: this.notificationCount,
         lastNotificationDate: this.lastNotificationDate
       };
@@ -345,6 +420,8 @@ class NotificationService {
       return { pendingCount: 0, dailyCount: 0, lastNotificationDate: null };
     }
   }
+
+
 }
 
 export default new NotificationService(); 

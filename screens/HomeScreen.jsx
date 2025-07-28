@@ -116,11 +116,11 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={[styles.greeting, { fontFamily: 'Inter_500Medium', fontSize: 15, color: theme.colors.textSubtle }]}>Welcome back</Text>
+            <Text style={styles.greeting}>Welcome back</Text>
             {/* Only show app name if no username */}
-            {!username && <Text style={[styles.headerTitle, { fontFamily: 'Inter_700Bold' }]}>Cashalyst</Text>}
+            {!username && <Text style={styles.headerTitle}>Cashalyst</Text>}
             {username && (
-              <Text style={[styles.headerTitle, { fontFamily: 'Inter_700Bold', fontSize: 24, color: theme.colors.textMain }]}>{username.trim().split(' ')[0]}</Text>
+              <Text style={[styles.headerTitle, { fontSize: 24 }]}>{username.trim().split(' ')[0]}</Text>
             )}
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -138,7 +138,7 @@ const HomeScreen = ({ navigation }) => {
                 activeOpacity={0.8}
                 onPress={() => navigation.navigate('Settings')}
               >
-                <Text style={{ color: theme.colors.buttonText || '#fff', fontFamily: 'Inter_700Bold', fontSize: 18 }}>
+                <Text style={{ color: theme.colors.buttonText || '#fff', fontFamily: theme.font.family.bold, fontSize: 18 }}>
                   {username.trim().charAt(0).toUpperCase()}
                 </Text>
               </TouchableOpacity>
@@ -166,10 +166,10 @@ const HomeScreen = ({ navigation }) => {
             style={styles.balanceGradient}
           >
             <View style={styles.balanceContent}>
-              <Text style={[styles.balanceLabel, { fontFamily: 'Inter_600SemiBold' }]}>Total Balance</Text>
-              <Text style={[styles.balanceAmount, { fontFamily: 'Inter_700Bold' }]}>{formatCurrency(stats.totalBalance)}</Text>
+              <Text style={styles.balanceLabel}>Total Balance</Text>
+              <Text style={styles.balanceAmount}>{formatCurrency(stats.totalBalance)}</Text>
               <View style={styles.balanceTrend}>
-                <Text style={[styles.trendText, { fontFamily: 'Inter_600SemiBold' }]}> {stats.monthlySavings >= 0 ? '+' : ''}{formatCurrency(stats.monthlySavings)} this month</Text>
+                <Text style={styles.trendText}> {stats.monthlySavings >= 0 ? '+' : ''}{formatCurrency(stats.monthlySavings)} this month</Text>
               </View>
             </View>
           </LinearGradient>
@@ -177,20 +177,20 @@ const HomeScreen = ({ navigation }) => {
 
         {/* Monthly Overview */}
         <View style={styles.overviewSection}>
-          <Text style={[styles.sectionTitle, { fontFamily: 'Inter_700Bold' }]}>This Month</Text>
+          <Text style={styles.sectionTitle}>This Month</Text>
           <View style={styles.overviewGrid}>
             <Surface style={styles.overviewCard}>
               <View style={styles.overviewContent}>
                 <TrendingUp color="#10B981" size={24} />
-                <Text style={[styles.overviewAmount, { fontFamily: 'Inter_700Bold' }]}>{formatCurrency(stats.monthlyIncome)}</Text>
-                <Text style={[styles.overviewLabel, { fontFamily: 'Inter_600SemiBold' }]}>Income</Text>
+                <Text style={styles.overviewAmount}>{formatCurrency(stats.monthlyIncome)}</Text>
+                <Text style={styles.overviewLabel}>Income</Text>
               </View>
             </Surface>
             <Surface style={styles.overviewCard}>
               <View style={styles.overviewContent}>
                 <TrendingDown color="#EF4444" size={24} />
-                <Text style={[styles.overviewAmount, { fontFamily: 'Inter_700Bold' }]}>{formatCurrency(stats.monthlyExpense)}</Text>
-                <Text style={[styles.overviewLabel, { fontFamily: 'Inter_600SemiBold' }]}>Expenses</Text>
+                <Text style={styles.overviewAmount}>{formatCurrency(stats.monthlyExpense)}</Text>
+                <Text style={styles.overviewLabel}>Expenses</Text>
               </View>
             </Surface>
           </View>
@@ -198,7 +198,7 @@ const HomeScreen = ({ navigation }) => {
 
         {/* Quick Actions */}
         <View style={styles.actionsSection}>
-          <Text style={[styles.sectionTitle, { fontFamily: 'Inter_700Bold' }]}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
             <TouchableOpacity
               style={styles.actionCard}
@@ -206,7 +206,7 @@ const HomeScreen = ({ navigation }) => {
             >
               <View style={styles.actionContent}>
                 <PlusCircle color="#3B82F6" size={24} />
-                <Text style={[styles.actionText, { fontFamily: 'Inter_600SemiBold' }]}>Add Transaction</Text>
+                <Text style={styles.actionText}>Add Transaction</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -215,7 +215,7 @@ const HomeScreen = ({ navigation }) => {
             >
               <View style={styles.actionContent}>
                 <List color="#94A3B8" size={24} />
-                <Text style={[styles.actionText, { fontFamily: 'Inter_600SemiBold' }]}>View History</Text>
+                <Text style={styles.actionText}>View History</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -224,7 +224,7 @@ const HomeScreen = ({ navigation }) => {
             >
               <View style={styles.actionContent}>
                 <BarChart2 color="#94A3B8" size={24} />
-                <Text style={[styles.actionText, { fontFamily: 'Inter_600SemiBold' }]}>Insights</Text>
+                <Text style={styles.actionText}>Insights</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -233,7 +233,7 @@ const HomeScreen = ({ navigation }) => {
             >
               <View style={styles.actionContent}>
                 <Wallet color="#94A3B8" size={24} />
-                <Text style={[styles.actionText, { fontFamily: 'Inter_600SemiBold' }]}>Accounts</Text>
+                <Text style={styles.actionText}>Accounts</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -242,7 +242,7 @@ const HomeScreen = ({ navigation }) => {
         {/* Recent Transactions */}
         <View style={styles.transactionsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontFamily: 'Inter_700Bold' }]}>Recent Transactions</Text>
+            <Text style={styles.sectionTitle}>Recent Transactions</Text>
             <TouchableOpacity onPress={() => navigation.navigate('History')}>
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
@@ -273,7 +273,7 @@ const HomeScreen = ({ navigation }) => {
                       })()}
                     </View>
                     <View style={styles.transactionDetails}>
-                      <Text style={[styles.transactionTitle, { fontFamily: 'Inter_600SemiBold' }]}>{transaction.title}</Text>
+                      <Text style={styles.transactionTitle}>{transaction.title}</Text>
                       <View style={styles.transactionMetaRow}>
                         <Text style={styles.transactionMeta}>{transaction.category}</Text>
                         <Text style={styles.transactionMeta}>•</Text>
@@ -283,7 +283,7 @@ const HomeScreen = ({ navigation }) => {
                       </View>
                     </View>
                     <View style={styles.transactionAmountWrap}>
-                      <Text style={[styles.amountText, { color: transaction.type === 'income' ? '#10B981' : '#EF4444', fontFamily: 'Inter_700Bold' }]}>
+                                              <Text style={[styles.amountText, { color: transaction.type === 'income' ? '#10B981' : '#EF4444' }]}>
                         {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}
                       </Text>
                     </View>
@@ -309,13 +309,13 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
   },
   header: {
     paddingTop: 20,
     paddingBottom: 24,
-    paddingHorizontal: 20,
-    backgroundColor: '#0F172A',
+    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.background,
   },
   headerContent: {
     flexDirection: 'row',
@@ -323,15 +323,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   greeting: {
-    fontSize: 16,
-    color: '#94A3B8',
+    fontSize: 15,
+    color: theme.colors.textSubtle,
     marginBottom: 4,
-    fontWeight: '500',
+    fontFamily: theme.font.family.medium,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#F9FAFB',
+    fontFamily: theme.font.family.bold,
+    color: theme.colors.textMain,
     letterSpacing: -0.5,
   },
   accountsButton: {
@@ -343,15 +343,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(148, 163, 184, 0.2)',
   },
   accountsButtonText: {
-    color: '#F9FAFB',
+    color: theme.colors.textMain,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: theme.font.family.bold,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: theme.spacing.lg,
     paddingBottom: 100,
   },
   balanceCard: {
@@ -375,15 +375,15 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textSubtle,
     marginBottom: 8,
-    fontWeight: '500',
+    fontFamily: theme.font.family.medium,
     letterSpacing: 0.2,
   },
   balanceAmount: {
     fontSize: 32,
-    fontWeight: '700',
-    color: '#F9FAFB',
+    fontFamily: theme.font.family.bold,
+    color: theme.colors.textMain,
     marginBottom: 8,
     letterSpacing: -0.5,
   },
@@ -398,28 +398,28 @@ const styles = StyleSheet.create({
   trendText: {
     color: '#10B981',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: theme.font.family.bold,
   },
   overviewSection: {
     marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#F9FAFB',
+    fontSize: 18,
+    fontFamily: theme.font.family.bold,
+    color: theme.colors.textMain,
     marginBottom: 16,
     letterSpacing: -0.3,
   },
   overviewGrid: {
     flexDirection: 'row',
-    gap: 16,
+    gap: theme.spacing.md,
   },
   overviewCard: {
     flex: 1,
-    borderRadius: 16,
-    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     elevation: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -427,8 +427,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   overviewContent: {
-    padding: 20,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
   },
   overviewIcon: {
@@ -436,16 +436,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   overviewAmount: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#F9FAFB',
+    fontSize: 16,
+    fontFamily: theme.font.family.bold,
+    color: theme.colors.textMain,
     marginBottom: 4,
     letterSpacing: 0.2,
   },
   overviewLabel: {
     fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '500',
+    color: theme.colors.textSubtle,
+    fontFamily: theme.font.family.medium,
     letterSpacing: 0.2,
   },
   actionsSection: {
@@ -455,14 +455,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    justifyContent: 'space-between',
   },
   actionCard: {
-    width: (width - 52) / 2,
-    borderRadius: 16,
-    backgroundColor: '#1E293B',
+    width: '48%',
+    marginBottom: 12,
+    borderRadius: 12,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     elevation: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -470,8 +470,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   actionContent: {
-    padding: 20,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
   },
   actionIcon: {
@@ -479,9 +479,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   actionText: {
-    color: '#F9FAFB',
+    color: theme.colors.textMain,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: theme.font.family.bold,
     textAlign: 'center',
     letterSpacing: 0.2,
   },
@@ -495,18 +495,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   viewAllText: {
-    color: '#3B82F6',
+    color: theme.colors.accent,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: theme.font.family.bold,
     letterSpacing: 0.2,
   },
   emptyCard: {
     padding: 32,
-    borderRadius: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     elevation: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -519,20 +519,21 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#F9FAFB',
+    fontFamily: theme.font.family.bold,
+    color: theme.colors.textMain,
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   emptyText: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textSubtle,
+    fontFamily: theme.font.family.medium,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
   },
   emptyButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: theme.colors.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -540,17 +541,17 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(59, 130, 246, 0.3)',
   },
   emptyButtonText: {
-    color: '#F9FAFB',
+    color: theme.colors.buttonText || '#fff',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: theme.font.family.bold,
     letterSpacing: 0.2,
   },
   transactionCard: {
     marginBottom: 8,
     borderRadius: 12,
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     elevation: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -577,8 +578,8 @@ const styles = StyleSheet.create({
   },
   transactionTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#F9FAFB',
+    fontFamily: theme.font.family.bold,
+    color: theme.colors.textMain,
     marginBottom: 4,
     letterSpacing: -0.2,
   },
@@ -589,7 +590,7 @@ const styles = StyleSheet.create({
   },
   transactionMeta: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: theme.colors.textSubtle,
     marginRight: 4,
   },
   transactionAmountWrap: {
@@ -597,7 +598,7 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: theme.font.family.bold,
     letterSpacing: -0.2,
   },
   fab: {
@@ -605,7 +606,7 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#3B82F6',
+    backgroundColor: theme.colors.accent,
     borderRadius: 16,
     elevation: 4,
     shadowColor: '#000',

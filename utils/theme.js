@@ -34,6 +34,10 @@ const font = {
     body: responsiveFontSize(14),
     amount: responsiveFontSize(22),
     note: responsiveFontSize(12),
+    // Enhanced accessibility sizes
+    largeTitle: responsiveFontSize(32),
+    largeBody: responsiveFontSize(16),
+    largeLabel: responsiveFontSize(18),
   },
   weight: {
     medium: '600',
@@ -46,6 +50,10 @@ const font = {
     body: moderateScale(18),
     amount: moderateScale(28),
     note: moderateScale(16),
+    // Enhanced accessibility line heights
+    largeTitle: moderateScale(40),
+    largeBody: moderateScale(22),
+    largeLabel: moderateScale(24),
   },
 };
 
@@ -99,6 +107,7 @@ const button = {
     backgroundColor: colors.accent,
     borderRadius: radii.button,
     height: moderateScale(52),
+    minHeight: moderateScale(48),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.shadow,
@@ -113,13 +122,15 @@ const button = {
     borderWidth: 1,
     borderRadius: radii.button,
     height: moderateScale(52),
+    minHeight: moderateScale(48),
     alignItems: 'center',
     justifyContent: 'center',
   },
   text: {
     backgroundColor: 'transparent',
     borderRadius: radii.button,
-    height: moderateScale(40),
+    height: moderateScale(44),
+    minHeight: moderateScale(40),
     alignItems: 'center',
     justifyContent: 'center',
   },

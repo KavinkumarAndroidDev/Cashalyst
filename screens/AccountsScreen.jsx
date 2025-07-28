@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   Animated,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Surface, FAB, Snackbar } from 'react-native-paper';
@@ -41,6 +42,8 @@ const AccountsScreen = ({ navigation }) => {
   const [lastBalance, setLastBalance] = useState(0);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState(null);
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   let loadingTimeout = null;
 
   useEffect(() => {
@@ -103,37 +106,47 @@ const AccountsScreen = ({ navigation }) => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name.trim()) {
-      Alert.alert('Error', 'Please enter an account name');
-      return;
-    }
-    if (!formData.balance || parseFloat(formData.balance) < 0) {
-      Alert.alert('Error', 'Please enter a valid balance');
-      return;
-    }
-    setDelayedLoading(false);
-    loadingTimeout = setTimeout(() => setDelayedLoading(true), 300);
     try {
+      if (!formData.name.trim()) {
+        setErrorMessage('Please enter an account name');
+        setErrorModalVisible(true);
+        return;
+      }
+      if (!formData.balance || parseFloat(formData.balance) < 0) {
+        setErrorMessage('Please enter a valid balance');
+        setErrorModalVisible(true);
+        return;
+      }
+      // Check for duplicate account names (case-insensitive)
+      const trimmedName = formData.name.trim();
+      const existingAccount = accounts.find(account => 
+        account.name.toLowerCase() === trimmedName.toLowerCase() && 
+        (!editingAccount || account.id !== editingAccount.id)
+      );
+      if (existingAccount) {
+        setErrorMessage(`An account with the name "${trimmedName}" already exists. Please choose a different name.`);
+        setErrorModalVisible(true);
+        return;
+      }
+      setDelayedLoading(false);
+      loadingTimeout = setTimeout(() => setDelayedLoading(true), 300);
       const accountData = {
-        name: formData.name.trim(),
+        name: trimmedName,
         type: formData.type,
         balance: parseFloat(formData.balance),
       };
-      // Optimistically close modal and show success
-      closeModal();
       if (editingAccount) {
         await updateAccount(editingAccount.id, accountData);
         setSuccessMsg('Account updated successfully');
       } else {
-        await addAccount({
-          id: generateId(),
-          ...accountData,
-        });
+        await addAccount(accountData);
         setSuccessMsg('Account added successfully');
       }
+      closeModal();
       setShowSuccess(true);
     } catch (error) {
-      Alert.alert('Error', 'Failed to save account. Please try again.');
+      setErrorMessage(error.message || 'Failed to save account. Please try again.');
+      setErrorModalVisible(true);
     } finally {
       clearTimeout(loadingTimeout);
       setDelayedLoading(false);
@@ -196,7 +209,7 @@ const AccountsScreen = ({ navigation }) => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <ArrowLeft size={24} color="#F9FAFB" />
+            <ArrowLeft color={theme.colors.textMain} size={22} />
           </AppButton>
           <Text style={styles.headerTitle}>Money Sources</Text>
           <View style={styles.placeholder} />
@@ -280,20 +293,18 @@ const AccountsScreen = ({ navigation }) => {
                         {formatCurrency(account.balance)}
                       </Text>
                       <View style={styles.actionButtons}>
-                        <AppButton
-                          style={styles.editButton}
+                        <TouchableOpacity
+                          style={{ marginLeft: 8, padding: 4 }}
                           onPress={() => openEditModal(account)}
-                          variant="text"
                         >
                           <Pencil color={theme.colors.textSubtle} size={18} />
-                        </AppButton>
-                        <AppButton
-                          style={styles.deleteButton}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ marginLeft: 4, padding: 4 }}
                           onPress={() => handleDelete(account)}
-                          variant="text"
                         >
                           <Trash2 color={theme.colors.error} size={18} />
-                        </AppButton>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </View>
@@ -422,6 +433,24 @@ const AccountsScreen = ({ navigation }) => {
         showCloseButton={false}
         blurBackground={true}
       />
+
+      {/* Custom Error Modal */}
+      <AppModal
+        visible={errorModalVisible}
+        onDismiss={() => setErrorModalVisible(false)}
+        title="Error"
+        type="error"
+        message={errorMessage}
+        actions={[
+          {
+            text: 'OK',
+            style: 'primary',
+            onPress: () => setErrorModalVisible(false)
+          }
+        ]}
+        showCloseButton={false}
+        blurBackground={true}
+      />
     </SafeAreaView>
   );
 };
@@ -443,14 +472,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: 'rgba(148, 163, 184, 0.1)',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: theme.colors.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
+    borderColor: theme.colors.border,
   },
   headerTitle: {
     fontSize: 20,
@@ -601,32 +630,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  editButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: 'rgba(148, 163, 184, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
-  },
-  editButtonText: {
-    fontSize: 14,
-  },
-  deleteButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-  },
-  deleteButtonText: {
-    fontSize: 14,
-  },
+
   emptyCard: {
     padding: 32,
     borderRadius: 16,

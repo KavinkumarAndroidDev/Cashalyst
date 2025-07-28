@@ -2,7 +2,7 @@
   "expo": {
     "name": "Cashalyst",
     "slug": "Cashalyst",
-    "version": "2.0.0", 
+    "version": "2.1.0", 
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -19,19 +19,19 @@
       "backgroundColor": "#0F172A",
       "resizeMode": "contain"
     },
-    "android": {
-      "edgeToEdgeEnabled": true,
-      "package": "com.kkdev.cashalyst",
-      "versionCode": 1,
-      "permissions": [
-        "android.permission.VIBRATE",
-        "android.permission.POST_NOTIFICATIONS",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.WAKE_LOCK",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
-      ]
-    },
+      "android": {
+    "edgeToEdgeEnabled": true,
+    "package": "com.kkdev.cashalyst",
+    "versionCode": 3,
+    "permissions": [
+      "android.permission.VIBRATE",
+      "android.permission.POST_NOTIFICATIONS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.WAKE_LOCK",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ]
+  },
     "web": {
       "favicon": "./assets/logo.png"
     },

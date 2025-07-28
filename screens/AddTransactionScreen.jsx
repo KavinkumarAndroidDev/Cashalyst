@@ -66,6 +66,11 @@ const AddTransactionScreen = ({ navigation }) => {
     ],
   };
 
+  const isValidDate = (dateString) => {
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date) && dateString.length === 10;
+  };
+
   const updateForm = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -90,6 +95,11 @@ const AddTransactionScreen = ({ navigation }) => {
     }
     if (!formData.source) {
       setErrorMessage('Please select a source');
+      setErrorModalVisible(true);
+      return;
+    }
+    if (!formData.date || !isValidDate(formData.date)) {
+      setErrorMessage('Please enter a valid date');
       setErrorModalVisible(true);
       return;
     }
@@ -133,7 +143,9 @@ const AddTransactionScreen = ({ navigation }) => {
       formData.amount &&
       parseFloat(formData.amount) > 0 &&
       formData.category &&
-      formData.source
+      formData.source &&
+      formData.date &&
+      isValidDate(formData.date)
     );
   };
 
@@ -144,7 +156,7 @@ const AddTransactionScreen = ({ navigation }) => {
       <View style={{ paddingTop: 20, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <AppButton
-            style={{ width: 40, height: 40, borderRadius: theme.radii.button, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
+            style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
             onPress={() => navigation.goBack()}
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
@@ -154,9 +166,9 @@ const AddTransactionScreen = ({ navigation }) => {
         </View>
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <Surface style={{ borderRadius: theme.radii.card, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, padding: theme.spacing.lg, marginBottom: theme.spacing.xl }}>
+        <Surface style={{ borderRadius: 12, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, padding: theme.spacing.lg, marginBottom: theme.spacing.xl, elevation: 0, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 }}>
           {/* Transaction Type */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Transaction type</Text>
+          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Transaction Type</Text>
           <View style={{ flexDirection: 'row', marginBottom: 24 }}>
             {transactionTypes.map(type => {
               const Icon = type.icon;
@@ -169,36 +181,33 @@ const AddTransactionScreen = ({ navigation }) => {
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: isActive ? theme.colors.accent : theme.colors.card,
-                    borderRadius: theme.radii.button,
+                    backgroundColor: isActive ? theme.colors.accent : 'rgba(59, 130, 246, 0.1)',
+                    borderRadius: 12,
                     height: 48,
                     marginRight: type.value === 'expense' ? 8 : 0,
                     borderWidth: isActive ? 0 : 1,
-                    borderColor: theme.colors.border,
+                    borderColor: isActive ? theme.colors.accent : 'rgba(59, 130, 246, 0.2)',
                   }}
                   onPress={() => updateForm('type', type.value)}
-                  activeOpacity={0.85}
+                  activeOpacity={0.7}
                 >
-                  <Icon color={isActive ? theme.colors.textMain : theme.colors.textSubtle} size={20} style={{ marginRight: 8 }} />
-                  <Text style={{ color: isActive ? theme.colors.textMain : theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: theme.font.size.label }}>{type.label}</Text>
+                  <Icon color={isActive ? '#fff' : theme.colors.accent} size={20} style={{ marginRight: 8 }} />
+                  <Text style={{ color: isActive ? '#fff' : theme.colors.accent, fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, letterSpacing: 0.2 }}>{type.label}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
           {/* Amount Input */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Enter amount</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 20, marginRight: 8 }}>₹</Text>
-            <AppTextField
-              value={formData.amount}
-              onChangeText={text => updateForm('amount', text)}
-              keyboardType="numeric"
-              style={{ flex: 1 }}
-              placeholder="0.00"
-            />
-          </View>
+          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Amount</Text>
+          <AppTextField
+            value={formData.amount}
+            onChangeText={text => updateForm('amount', text)}
+            keyboardType="numeric"
+            style={{ marginBottom: 16 }}
+            placeholder="₹ 0.00"
+          />
           {/* Title Input */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Title</Text>
+          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Title</Text>
           <AppTextField
             value={formData.title}
             onChangeText={text => updateForm('title', text)}
@@ -206,7 +215,7 @@ const AddTransactionScreen = ({ navigation }) => {
             placeholder="e.g., Coffee, Salary, Groceries"
           />
           {/* Category Selection */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Category</Text>
+          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Category</Text>
           <AppDropdown
             items={categories[formData.type]}
             selectedValue={formData.category}
@@ -214,7 +223,7 @@ const AddTransactionScreen = ({ navigation }) => {
             style={{ marginBottom: 24 }}
           />
           {/* Source Selection */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Source</Text>
+          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Source</Text>
           <AppDropdown
             items={accounts.map(account => ({ label: account.name, value: account.name }))}
             selectedValue={formData.source}
@@ -301,18 +310,22 @@ const AddTransactionScreen = ({ navigation }) => {
             </View>
           )}
           {/* Date Input */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Date</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
-            <Calendar color={theme.colors.textSubtle} size={20} style={{ marginRight: 8 }} />
-            <AppTextField
-              value={formData.date}
-              onChangeText={text => updateForm('date', text)}
-              style={{ flex: 1 }}
-              placeholder="YYYY-MM-DD"
-            />
-          </View>
+          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Date</Text>
+          <AppTextField
+            value={formData.date}
+            onChangeText={text => {
+              // Only allow valid date format characters
+              const cleaned = text.replace(/[^0-9-]/g, '');
+              if (cleaned.length <= 10) {
+                updateForm('date', cleaned);
+              }
+            }}
+            style={{ marginBottom: 24 }}
+            placeholder="YYYY-MM-DD"
+            keyboardType="numeric"
+          />
           {/* Note Input */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Note (optional)</Text>
+          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Note (Optional)</Text>
           <AppTextField
             value={formData.note}
             onChangeText={text => updateForm('note', text)}
@@ -322,12 +335,26 @@ const AddTransactionScreen = ({ navigation }) => {
         </Surface>
         {/* Submit Button */}
         <AppButton
-          style={{ marginTop: theme.spacing.lg, alignSelf: 'center', minWidth: 220, ...theme.button.filled, opacity: localLoading || !canSubmit() ? 0.6 : 1 }}
+          style={{ 
+            marginTop: theme.spacing.lg, 
+            alignSelf: 'center', 
+            minWidth: 220, 
+            backgroundColor: theme.colors.accent,
+            paddingHorizontal: 32,
+            paddingVertical: 16,
+            borderRadius: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: localLoading || !canSubmit() ? 0.6 : 1 
+          }}
           onPress={handleSubmit}
           disabled={localLoading || !canSubmit()}
-          activeOpacity={0.85}
+          activeOpacity={0.7}
         >
-          <Text style={theme.button.filledLabel}>{localLoading ? 'Adding...' : 'Add Transaction'}</Text>
+          <Text style={{ color: '#fff', fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, letterSpacing: 0.2 }}>
+            {localLoading ? 'Adding...' : 'Add Transaction'}
+          </Text>
           {localLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />}
         </AppButton>
       </ScrollView>

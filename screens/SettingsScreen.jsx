@@ -14,6 +14,7 @@ import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppTextField from '../components/AppTextField';
 import { Linking } from 'react-native';
+import Constants from 'expo-constants';
 
 const SettingsScreen = ({ navigation }) => {
   const [hasBackup, setHasBackup] = useState(false);
@@ -50,7 +51,17 @@ const SettingsScreen = ({ navigation }) => {
     try {
       const status = await notificationService.checkPermissionStatus();
       const stats = await notificationService.getNotificationStats();
-      setNotificationsEnabled(status === 'granted');
+      
+      console.log('Notification status check:', { status, stats });
+      
+      // Check if notifications are actually active (permission granted AND pending notifications)
+      const hasPermission = status === 'granted';
+      const hasActiveNotifications = stats.pendingCount > 0;
+      
+      console.log('Status result:', { hasPermission, hasActiveNotifications });
+      
+      // Show as enabled only if both permission granted AND notifications are scheduled
+      setNotificationsEnabled(hasPermission && hasActiveNotifications);
       setNotificationStats(stats);
     } catch (error) {
       console.error('Failed to check notification status:', error);
@@ -227,25 +238,35 @@ const SettingsScreen = ({ navigation }) => {
         // Disable notifications
         await notificationService.cancelAllNotifications();
         setNotificationsEnabled(false);
-        setSuccessMessage('Notifications turned off');
+        setSuccessMessage('Smart notifications turned off');
         setShowSuccess(true);
+        // Refresh status after disabling - longer delay to ensure cancellation
+        setTimeout(() => checkNotificationStatus(), 2000);
       } else {
         // Enable smart notifications
         const initialized = await notificationService.initialize();
         if (initialized) {
-          // Enable smart notifications with personalized messages
+          // Enable smart notifications
           await notificationService.enableSmartNotifications();
-          setNotificationsEnabled(true);
-          setSuccessMessage('Notifications turned on');
+          setSuccessMessage('Smart notifications turned on');
           setShowSuccess(true);
+          // Refresh status after enabling - longer delay to ensure scheduling
+          setTimeout(() => checkNotificationStatus(), 5000);
         } else {
           setErrorMessage('Please enable notifications in your device settings');
           setShowError(true);
         }
       }
     } catch (error) {
-      setErrorMessage('Please enable notifications in your device settings');
+      console.error('Notification toggle error:', error);
+      if (error.message === 'Notification permission not granted') {
+        setErrorMessage('Please enable notifications in your device settings');
+      } else {
+        setErrorMessage('Failed to update notification settings');
+      }
       setShowError(true);
+      // Refresh status to show correct state
+      setTimeout(() => checkNotificationStatus(), 2000);
     }
   };
 
@@ -315,14 +336,14 @@ const SettingsScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top', 'bottom']}>
       <StatusBar barStyle="light-content" />
       
       {/* Header */}
       <View style={{ paddingTop: 20, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <AppButton
-            style={{ width: 40, height: 40, borderRadius: theme.radii.button, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
+            style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
             onPress={() => navigation.goBack()}
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
@@ -391,10 +412,10 @@ const SettingsScreen = ({ navigation }) => {
         
         <SettingItem
           icon={Bell}
-          title="Notifications"
+          title="Smart Notifications"
           subtitle={notificationsEnabled ? 
-            "Enabled - Tap to disable" : 
-            "Disabled - Tap to enable"
+            "Active - Tap to turn off" : 
+            "Inactive - Tap to turn on"
           }
           onPress={handleToggleNotifications}
         />
@@ -414,7 +435,27 @@ const SettingsScreen = ({ navigation }) => {
               color: '#10B981',
               textAlign: 'center',
             }}>
-              💡 You'll receive personalized reminders and weekly reports
+              💡 You'll receive daily reminders
+            </Text>
+          </View>
+        )}
+        
+        {!notificationsEnabled && (
+          <View style={{
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderRadius: 12,
+            padding: 12,
+            marginBottom: 12,
+            borderWidth: 1,
+            borderColor: 'rgba(239, 68, 68, 0.2)',
+          }}>
+            <Text style={{
+              fontFamily: theme.font.family.medium,
+              fontSize: 12,
+              color: '#EF4444',
+              textAlign: 'center',
+            }}>
+              To completely disable notifications, go to device settings
             </Text>
           </View>
         )}
@@ -425,7 +466,7 @@ const SettingsScreen = ({ navigation }) => {
         <SettingItem
           icon={Info}
           title="Version"
-          subtitle="1.8.0"
+          subtitle={Constants.expoConfig?.version || "2.0.1"}
           onPress={() => {}}
         />
 
