@@ -187,13 +187,13 @@ The app comes with three default accounts:
 - [ ] Advanced analytics
 
 ### Technical Improvements
-- [ ] Offline-first architecture
+- [x] Offline-first architecture
 - [ ] Performance optimizations
 - [ ] Unit and integration tests
 - [ ] Accessibility improvements
 - [ ] Internationalization (i18n)
-- [ ] Push notifications
-- [ ] Data backup/restore
+- [x] Push notifications
+- [x] Data backup/restore
 
 ## Contributing
 
