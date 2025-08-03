@@ -36,7 +36,7 @@ This Code of Conduct applies within all project spaces and also applies when an 
 
 ## Enforcement
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project team at:  
-**r.kavinkumar.dev@gmail.com** (replace with your actual contact email)
+**r.kavinkumar.dev@gmail.com**
 
 All complaints will be reviewed and investigated promptly and fairly.
 
