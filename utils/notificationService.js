@@ -55,9 +55,9 @@ const notificationMessages = [
 
 class NotificationService {
   constructor() {
-    this.isInitialized = false;
-    this.lastNotificationDate = null;
-    this.notificationCount = 0;
+    this.isInitialized = false; // Track if notifications are initialized
+    this.lastNotificationDate = null; // Last notification date
+    this.notificationCount = 0; // Number of notifications sent today
   }
 
   async initialize() {
@@ -88,7 +88,7 @@ class NotificationService {
         });
       }
 
-      // Load notification state
+      // Load notification state from storage
       await this.loadNotificationState();
       
       this.isInitialized = true;
@@ -144,6 +144,7 @@ class NotificationService {
   }
 
   getRandomMessage() {
+    // Pick a random notification message
     const randomIndex = Math.floor(Math.random() * notificationMessages.length);
     return notificationMessages[randomIndex];
   }
@@ -423,5 +424,3 @@ class NotificationService {
 
 
 }
-
-export default new NotificationService(); 

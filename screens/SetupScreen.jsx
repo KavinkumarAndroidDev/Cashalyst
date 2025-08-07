@@ -13,7 +13,7 @@ import {
   Platform,
   SafeAreaView,
   Modal,
-} from 'react-native';
+} from 'react-native';//RN core components 
 import { TextInput, Surface, Snackbar } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Picker } from '@react-native-picker/picker';
@@ -34,11 +34,14 @@ import { CommonActions } from '@react-navigation/native';
 const { width } = Dimensions.get('window');
 
 const SetupScreen = ({ navigation }) => {
+  //get functions from the store
   const { addAccount, loading } = useStore();
+  //sources (money sources) state
   const [sources, setSources] = useState([]);
   const [showSourceModal, setShowSourceModal] = useState(false);
   const [editingSource, setEditingSource] = useState(null);
   const [sourceForm, setSourceForm] = useState({ type: 'upi', name: '', balance: '' });
+  //success and error states
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [delayedLoading, setDelayedLoading] = useState(false);
@@ -46,17 +49,18 @@ const SetupScreen = ({ navigation }) => {
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [hasBackup, setHasBackup] = useState(false);
   const [restored, setRestored] = useState(false);
+  //animation & timeouts
   const [fadeAnim] = useState(new Animated.Value(0));
   let loadingTimeout = null;
   const [username, setUsername] = useState('');
   const [usernameError, setUsernameError] = useState('');
-  // 1. Add state for info and error modals
+  //info/error modals and duplicate name error
   const [showSourceInfoModal, setShowSourceInfoModal] = useState(false);
   const [showRestoreInfoModal, setShowRestoreInfoModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [duplicateNameError, setDuplicateNameError] = useState(false);
-
+  //source type definitions (labels) 
   const sourceTypes = {
     upi: { label: 'UPI' },
     bank: { label: 'Bank Account' },
@@ -64,7 +68,7 @@ const SetupScreen = ({ navigation }) => {
     wallet: { label: 'Digital Wallet' },
     custom: { label: 'Custom' },
   };
-
+  //icon map for source types
   const CATEGORY_ICONS = {
     upi: CreditCard,
     bank: Banknote,
@@ -72,7 +76,7 @@ const SetupScreen = ({ navigation }) => {
     wallet: ShoppingCart,
     custom: PiggyBank,
   };
-  
+  //colors for source types
   const CATEGORY_COLORS = {
     upi: '#3B82F6',
     bank: '#8B5CF6',
@@ -80,7 +84,7 @@ const SetupScreen = ({ navigation }) => {
     wallet: '#F59E0B',
     custom: '#EF4444',
   };
-
+  //update a single field of a source 
   const updateSource = (id, field, value, iconOverride) => {
     setSources(prev => prev.map(source =>
       source.id === id
@@ -88,7 +92,7 @@ const SetupScreen = ({ navigation }) => {
         : source
     ));
   };
-
+  //add a new source with default values
   const addNewSource = () => {
     if (sources.some(s => !s.name.trim())) return;
     setSources(prev => [...prev, {
@@ -98,11 +102,11 @@ const SetupScreen = ({ navigation }) => {
       balance: '',
     }]);
   };
-
+  //remove a source by id
   const removeSource = (id) => {
     setSources(prev => prev.filter(s => s.id !== id));
   };
-
+  //check if setup is complete
   const handleStartTracking = async () => {
     if (!canStartTracking()) return;
     
@@ -151,17 +155,17 @@ const SetupScreen = ({ navigation }) => {
       setDelayedLoading(false);
     }
   };
-
+  //get total balance from all sources
   const getTotalBalance = () => {
     return sources.reduce((sum, s) => sum + (parseFloat(s.balance) || 0), 0);
   };
-
+  //check if all sources have valid names and balances
   const canStartTracking = () => {
     const hasValidSources = sources.some(s => s.name.trim() && s.balance && parseFloat(s.balance) > 0);
     const hasValidUsername = username.trim().length > 0;
     return hasValidSources && hasValidUsername;
   };
-
+  //check if there is a backup available
   const checkForBackup = async () => {
     try {
       const hasBackupData = await backupService.hasBackup();
@@ -170,7 +174,7 @@ const SetupScreen = ({ navigation }) => {
       console.error('Failed to check backup:', error);
     }
   };
-
+  //handle setup completion
   const handleSetupComplete = async () => {
     if (!canStartTracking()) return;
     
@@ -217,7 +221,7 @@ const SetupScreen = ({ navigation }) => {
       setDelayedLoading(false);
     }
   };
-
+  //handle restore backup
   const handleRestoreBackup = async () => {
     setRestoreLoading(true);
     try {
@@ -241,7 +245,7 @@ const SetupScreen = ({ navigation }) => {
       setRestoreLoading(false);
     }
   };
-
+  //handle restore from internal backup
   const handleRestoreFromInternal = async () => {
     setRestoreLoading(true);
     try {
@@ -265,7 +269,7 @@ const SetupScreen = ({ navigation }) => {
       setRestoreLoading(false);
     }
   };
-
+  //open source modal for adding/editing a source
   const openSourceModal = (source = null) => {
     if (source) {
       setSourceForm({

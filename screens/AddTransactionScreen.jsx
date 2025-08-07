@@ -23,27 +23,34 @@ import AppDropdown from '../components/AppDropdown';
 import AppModal from '../components/AppModal';
 
 const AddTransactionScreen = ({ navigation }) => {
+  // Get account data and transaction functions from Zustand store
   const { accounts, addTransaction, loading } = useStore();
+  
+  // Form state for transaction data
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
-    type: 'expense',
+    type: 'expense', // Default to expense type
     category: '',
     source: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
     note: '',
   });
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null);
-  const [localLoading, setLocalLoading] = useState(false);
-  const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  
+  // UI state management
+  const [showSuccess, setShowSuccess] = useState(false); // Success message visibility
+  const [pendingAction, setPendingAction] = useState(null); // Track pending operations
+  const [localLoading, setLocalLoading] = useState(false); // Local loading state for better UX
+  const [errorModalVisible, setErrorModalVisible] = useState(false); // Error modal visibility
+  const [errorMessage, setErrorMessage] = useState(''); // Error message text
 
+  // Transaction type options with icons
   const transactionTypes = [
     { value: 'expense', label: 'Expense', icon: ArrowUpCircle },
     { value: 'income', label: 'Income', icon: ArrowDownCircle },
   ];
 
+  // Category options organized by transaction type
   const categories = {
     expense: [
       'Food & Dining',
@@ -66,18 +73,22 @@ const AddTransactionScreen = ({ navigation }) => {
     ],
   };
 
+  // Validate date format (YYYY-MM-DD)
   const isValidDate = (dateString) => {
     const date = new Date(dateString);
-    return date instanceof Date && !isNaN(date) && dateString.length === 10;
+    return date instanceof Date && !isNaN(date) && dateString.length === 10; // Must be exactly 10 characters
   };
 
+  // Update form field with new value
   const updateForm = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Handle form submission for adding new transaction
   const handleSubmit = async () => {
-    if (localLoading) return;
-    // Validation
+    if (localLoading) return; // Prevent multiple submissions
+    
+    // Form validation
     if (!formData.title.trim()) {
       setErrorMessage('Please enter a transaction title');
       setErrorModalVisible(true);
@@ -103,8 +114,10 @@ const AddTransactionScreen = ({ navigation }) => {
       setErrorModalVisible(true);
       return;
     }
+    
     setLocalLoading(true);
     try {
+      // Create transaction object with generated ID
       const transaction = {
         id: generateId(),
         title: formData.title.trim(),
@@ -115,9 +128,12 @@ const AddTransactionScreen = ({ navigation }) => {
         date: formData.date,
         note: formData.note.trim(),
       };
-      // Optimistically update UI
+      
+      // Optimistically update UI for immediate feedback
       addTransaction(transaction);
       setShowSuccess(true);
+      
+      // Reset form to default values
       setFormData({
         title: '',
         amount: '',
@@ -127,8 +143,9 @@ const AddTransactionScreen = ({ navigation }) => {
         date: new Date().toISOString().split('T')[0],
         note: '',
       });
-      // Await persistence
-      await new Promise(res => setTimeout(res, 350)); // simulate fast feedback
+      
+      // Simulate persistence delay for better UX
+      await new Promise(res => setTimeout(res, 350));
     } catch (error) {
       setErrorMessage('Failed to add transaction. Please try again.');
       setErrorModalVisible(true);
@@ -137,42 +154,43 @@ const AddTransactionScreen = ({ navigation }) => {
     }
   };
 
+  // Check if form is valid for submission
   const canSubmit = () => {
     return (
-      formData.title.trim() &&
-      formData.amount &&
-      parseFloat(formData.amount) > 0 &&
-      formData.category &&
-      formData.source &&
-      formData.date &&
-      isValidDate(formData.date)
+      formData.title.trim() && // Title must not be empty
+      formData.amount && // Amount must be provided
+      parseFloat(formData.amount) > 0 && // Amount must be positive
+      formData.category && // Category must be selected
+      formData.source && // Source must be selected
+      formData.date && // Date must be provided
+      isValidDate(formData.date) // Date must be in valid format
     );
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
-      {/* Header */}
+      {/* Header with navigation and title */}
       <View style={{ paddingTop: 20, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <AppButton
             style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border }}
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.goBack()} // Navigate back to previous screen
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
           </AppButton>
           <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Add Transaction</Text>
-          <View style={{ width: 40 }} />
+          <View style={{ width: 40 }} /> {/* Spacer for balanced layout */}
         </View>
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <Surface style={{ borderRadius: 12, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, padding: theme.spacing.lg, marginBottom: theme.spacing.xl, elevation: 0, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 }}>
-          {/* Transaction Type */}
+          {/* Transaction Type Selection */}
           <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Transaction Type</Text>
           <View style={{ flexDirection: 'row', marginBottom: 24 }}>
             {transactionTypes.map(type => {
-              const Icon = type.icon;
-              const isActive = formData.type === type.value;
+              const Icon = type.icon; // Get icon component for this type
+              const isActive = formData.type === type.value; // Check if this type is selected
               return (
                 <TouchableOpacity
                   key={type.value}
@@ -181,14 +199,14 @@ const AddTransactionScreen = ({ navigation }) => {
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: isActive ? theme.colors.accent : 'rgba(59, 130, 246, 0.1)',
+                    backgroundColor: isActive ? theme.colors.accent : 'rgba(59, 130, 246, 0.1)', // Active/inactive background
                     borderRadius: 12,
                     height: 48,
-                    marginRight: type.value === 'expense' ? 8 : 0,
+                    marginRight: type.value === 'expense' ? 8 : 0, // Add margin between buttons
                     borderWidth: isActive ? 0 : 1,
                     borderColor: isActive ? theme.colors.accent : 'rgba(59, 130, 246, 0.2)',
                   }}
-                  onPress={() => updateForm('type', type.value)}
+                  onPress={() => updateForm('type', type.value)} // Update form with selected type
                   activeOpacity={0.7}
                 >
                   <Icon color={isActive ? '#fff' : theme.colors.accent} size={20} style={{ marginRight: 8 }} />
@@ -197,52 +215,52 @@ const AddTransactionScreen = ({ navigation }) => {
               );
             })}
           </View>
-          {/* Amount Input */}
+          {/* Amount Input Field */}
           <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Amount</Text>
           <AppTextField
             value={formData.amount}
-            onChangeText={text => updateForm('amount', text)}
+            onChangeText={text => updateForm('amount', text)} // Update amount in form
             keyboardType="numeric"
             style={{ marginBottom: 16 }}
             placeholder="₹ 0.00"
           />
-          {/* Title Input */}
+          {/* Transaction Title Input */}
           <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Title</Text>
           <AppTextField
             value={formData.title}
-            onChangeText={text => updateForm('title', text)}
+            onChangeText={text => updateForm('title', text)} // Update title in form
             style={{ marginBottom: 24 }}
             placeholder="e.g., Coffee, Salary, Groceries"
           />
-          {/* Category Selection */}
+          {/* Category Dropdown Selection */}
           <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Category</Text>
           <AppDropdown
-            items={categories[formData.type]}
+            items={categories[formData.type]} // Categories change based on transaction type
             selectedValue={formData.category}
-            onValueChange={value => updateForm('category', value)}
+            onValueChange={value => updateForm('category', value)} // Update category in form
             style={{ marginBottom: 24 }}
           />
-          {/* Source Selection */}
+          {/* Account Source Selection */}
           <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Source</Text>
           <AppDropdown
-            items={accounts.map(account => ({ label: account.name, value: account.name }))}
+            items={accounts.map(account => ({ label: account.name, value: account.name }))} // Map accounts to dropdown items
             selectedValue={formData.source}
-            onValueChange={value => updateForm('source', value)}
+            onValueChange={value => updateForm('source', value)} // Update source in form
             style={{ marginBottom: 24 }}
           />
-          {/* Account Balance Preview */}
+          {/* Account Balance Impact Preview */}
           {formData.source && formData.amount && (
             <View style={{ 
               backgroundColor: formData.type === 'expense' && parseFloat(formData.amount) > (accounts.find(acc => acc.name === formData.source)?.balance || 0) 
-                ? 'rgba(239, 68, 68, 0.08)' 
-                : 'rgba(59, 130, 246, 0.08)', 
+                ? 'rgba(239, 68, 68, 0.08)' // Red background for insufficient balance
+                : 'rgba(59, 130, 246, 0.08)', // Blue background for sufficient balance
               borderRadius: 12, 
               padding: 16, 
               marginBottom: 24, 
               borderWidth: 1, 
               borderColor: formData.type === 'expense' && parseFloat(formData.amount) > (accounts.find(acc => acc.name === formData.source)?.balance || 0)
-                ? 'rgba(239, 68, 68, 0.2)'
-                : 'rgba(59, 130, 246, 0.2)' 
+                ? 'rgba(239, 68, 68, 0.2)' // Red border for insufficient balance
+                : 'rgba(59, 130, 246, 0.2)' // Blue border for sufficient balance
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                 <Text style={{ 
@@ -266,12 +284,13 @@ const AddTransactionScreen = ({ navigation }) => {
                 <Text style={{ 
                   fontFamily: theme.font.family.bold, 
                   fontSize: 18, 
-                  color: formData.type === 'income' ? '#10B981' : '#EF4444'
+                  color: formData.type === 'income' ? '#10B981' : '#EF4444' // Green for income, red for expense
                 }}>
                   {formData.type === 'income' ? '+' : '-'}{formatCurrency(parseFloat(formData.amount))}
                 </Text>
               </View>
               
+              {/* Warning for insufficient balance */}
               {formData.type === 'expense' && parseFloat(formData.amount) > (accounts.find(acc => acc.name === formData.source)?.balance || 0) && (
                 <View style={{ 
                   backgroundColor: 'rgba(239, 68, 68, 0.1)', 
@@ -290,6 +309,7 @@ const AddTransactionScreen = ({ navigation }) => {
                 </View>
               )}
               
+              {/* Confirmation for sufficient balance */}
               {formData.type === 'expense' && parseFloat(formData.amount) <= (accounts.find(acc => acc.name === formData.source)?.balance || 0) && (
                 <View style={{ 
                   backgroundColor: 'rgba(16, 185, 129, 0.1)', 
@@ -302,21 +322,21 @@ const AddTransactionScreen = ({ navigation }) => {
                   <Text style={{ color: '#10B981', fontFamily: theme.font.family.bold, fontSize: 14, marginBottom: 4 }}>
                     Sufficient Balance
                   </Text>
-                  <Text style={{ color: '#10B981', fontFamily: theme.font.family.medium, fontSize: 13 }}>
+                  <Text style={{ color: '#10B981', fontFamily: theme.family.medium, fontSize: 13 }}>
                     Remaining: {formatCurrency((accounts.find(acc => acc.name === formData.source)?.balance || 0) - parseFloat(formData.amount))}
                   </Text>
                 </View>
               )}
             </View>
           )}
-          {/* Date Input */}
+          {/* Date Input with Format Validation */}
           <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Date</Text>
           <AppTextField
             value={formData.date}
             onChangeText={text => {
-              // Only allow valid date format characters
+              // Only allow valid date format characters (numbers and hyphens)
               const cleaned = text.replace(/[^0-9-]/g, '');
-              if (cleaned.length <= 10) {
+              if (cleaned.length <= 10) { // Limit to YYYY-MM-DD format length
                 updateForm('date', cleaned);
               }
             }}
@@ -324,16 +344,16 @@ const AddTransactionScreen = ({ navigation }) => {
             placeholder="YYYY-MM-DD"
             keyboardType="numeric"
           />
-          {/* Note Input */}
+          {/* Optional Note Input */}
           <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Note (Optional)</Text>
           <AppTextField
             value={formData.note}
-            onChangeText={text => updateForm('note', text)}
+            onChangeText={text => updateForm('note', text)} // Update note in form
             style={{ marginBottom: 24 }}
             placeholder="Add a note..."
           />
         </Surface>
-        {/* Submit Button */}
+        {/* Submit Button with Loading State */}
         <AppButton
           style={{ 
             marginTop: theme.spacing.lg, 
@@ -346,18 +366,19 @@ const AddTransactionScreen = ({ navigation }) => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: localLoading || !canSubmit() ? 0.6 : 1 
+            opacity: localLoading || !canSubmit() ? 0.6 : 1 // Dim when loading or form invalid
           }}
           onPress={handleSubmit}
-          disabled={localLoading || !canSubmit()}
+          disabled={localLoading || !canSubmit()} // Disable when loading or form invalid
           activeOpacity={0.7}
         >
           <Text style={{ color: '#fff', fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, letterSpacing: 0.2 }}>
-            {localLoading ? 'Adding...' : 'Add Transaction'}
+            {localLoading ? 'Adding...' : 'Add Transaction'} {/* Dynamic button text */}
           </Text>
-          {localLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />}
+          {localLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />} {/* Loading indicator */}
         </AppButton>
       </ScrollView>
+      {/* Success Message Snackbar */}
       <Snackbar
         visible={showSuccess}
         onDismiss={() => setShowSuccess(false)}
@@ -367,7 +388,7 @@ const AddTransactionScreen = ({ navigation }) => {
         <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction added successfully</Text>
       </Snackbar>
 
-      {/* Custom Error Modal */}
+      {/* Error Modal for Validation and Operation Errors */}
       <AppModal
         visible={errorModalVisible}
         onDismiss={() => setErrorModalVisible(false)}

@@ -25,6 +25,7 @@ const AppTextField = ({
       activeOutlineColor={theme.colors.accent}
       textColor={theme.colors.textMain}
       placeholderTextColor={theme.colors.textSubtle}
+      // Theme configuration for consistent styling
       theme={{
         colors: {
           background: theme.colors.input,

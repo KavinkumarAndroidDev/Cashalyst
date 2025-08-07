@@ -22,6 +22,7 @@ const AppModal = ({
   blurBackground = false,
   children
 }) => {
+  // Get appropriate icon based on modal type
   const getIcon = () => {
     switch (type) {
       case 'success':
@@ -34,6 +35,7 @@ const AppModal = ({
     }
   };
 
+  // Get icon background color based on modal type
   const getIconBackground = () => {
     switch (type) {
       case 'success':
@@ -46,6 +48,7 @@ const AppModal = ({
     }
   };
 
+  // Get primary button color based on modal type
   const getPrimaryButtonColor = () => {
     switch (type) {
       case 'success':
@@ -68,7 +71,7 @@ const AppModal = ({
       {blurBackground ? (
         <BlurView intensity={20} style={styles.overlay}>
           <Surface style={styles.modal}>
-            {/* Header */}
+            {/* Modal header with icon and close button */}
             <View style={styles.header}>
               <View style={styles.iconContainer}>
                 <View style={[styles.iconBackground, { backgroundColor: getIconBackground() }]}>
@@ -82,14 +85,14 @@ const AppModal = ({
               )}
             </View>
 
-            {/* Content */}
+            {/* Modal content area */}
             <View style={styles.content}>
               <Text style={styles.title}>{title}</Text>
               {message && <Text style={styles.message}>{message}</Text>}
               {children}
             </View>
 
-            {/* Actions */}
+            {/* Action buttons */}
             {actions.length > 0 && (
               <View style={styles.actions}>
                 {actions.map((action, index) => (
@@ -124,7 +127,7 @@ const AppModal = ({
       ) : (
         <View style={styles.overlay}>
           <Surface style={styles.modal}>
-            {/* Header */}
+            {/* Modal header with icon and close button */}
             <View style={styles.header}>
               <View style={styles.iconContainer}>
                 <View style={[styles.iconBackground, { backgroundColor: getIconBackground() }]}>
@@ -138,14 +141,14 @@ const AppModal = ({
               )}
             </View>
 
-            {/* Content */}
+            {/* Modal content area */}
             <View style={styles.content}>
               <Text style={styles.title}>{title}</Text>
               {message && <Text style={styles.message}>{message}</Text>}
               {children}
             </View>
 
-            {/* Actions */}
+            {/* Action buttons */}
             {actions.length > 0 && (
               <View style={styles.actions}>
                 {actions.map((action, index) => (
