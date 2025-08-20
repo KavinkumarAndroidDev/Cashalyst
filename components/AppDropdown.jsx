@@ -16,20 +16,24 @@ const AppDropdown = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Find the currently selected item from the items array
   const selectedItem = items.find(item => {
     const value = typeof item === 'string' ? item : item.value;
     return value === selectedValue;
   });
 
+  // Get the display label for the selected item or show placeholder
   const selectedLabel = selectedItem 
     ? (typeof selectedItem === 'string' ? selectedItem : selectedItem.label)
     : placeholder || 'Select an option';
 
+  // Helper function to extract label from item (string or object)
   const getItemLabel = (item) => {
     if (typeof item === 'string') return item;
     return item.fullLabel || item.label;
   };
 
+  // Handle item selection and close dropdown
   const handleSelect = (item) => {
     const value = typeof item === 'string' ? item : item.value;
     onValueChange(value);
@@ -38,6 +42,7 @@ const AppDropdown = ({
 
   return (
     <View style={[styles.dropdownWrap, style]}>
+      {/* Dropdown trigger button */}
       <TouchableOpacity
         style={[styles.dropdown, error && { borderColor: theme.colors.error }]}
         onPress={() => setIsOpen(true)}
@@ -60,6 +65,7 @@ const AppDropdown = ({
         </View>
       </TouchableOpacity>
 
+      {/* Dropdown options modal */}
       <Modal
         visible={isOpen}
         transparent={true}
@@ -109,6 +115,7 @@ const AppDropdown = ({
         </TouchableOpacity>
       </Modal>
 
+      {/* Helper text display */}
       {helperText ? (
         <Text style={{ color: error ? theme.colors.error : theme.colors.textHelper, fontSize: theme.font.size.note, marginTop: 4 }}>
           {helperText}

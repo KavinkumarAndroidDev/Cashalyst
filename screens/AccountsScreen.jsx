@@ -24,50 +24,62 @@ import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
 
 const AccountsScreen = ({ navigation }) => {
+  // Get account management functions from Zustand store
   const { accounts, addAccount, updateAccount, deleteAccount, getStats } = useStore();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingAccount, setEditingAccount] = useState(null);
+  
+  // Modal and form state management
+  const [modalVisible, setModalVisible] = useState(false); // Controls add/edit modal visibility
+  const [editingAccount, setEditingAccount] = useState(null); // Currently editing account (null for new)
   const [formData, setFormData] = useState({
     name: '',
     type: 'upi',
     balance: '',
-  });
+  }); // Form data for account creation/editing
+  
+  // Statistics and UI state
   const [stats, setStats] = useState({
     totalBalance: 0,
-  });
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
-  const [delayedLoading, setDelayedLoading] = useState(false);
-  const [balanceAnimation] = useState(new Animated.Value(1));
-  const [lastBalance, setLastBalance] = useState(0);
+  }); // Calculated statistics
+  const [showSuccess, setShowSuccess] = useState(false); // Success message visibility
+  const [successMsg, setSuccessMsg] = useState(''); // Success message text
+  const [delayedLoading, setDelayedLoading] = useState(false); // Loading state for better UX
+  const [balanceAnimation] = useState(new Animated.Value(1)); // Animation for balance changes
+  const [lastBalance, setLastBalance] = useState(0); // Track previous balance for animations
+  
+  // Delete confirmation modal state
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState(null);
+  
+  // Error handling state
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  let loadingTimeout = null;
+  
+  let loadingTimeout = null; // Timeout for delayed loading indicator
 
+  // Update statistics and animate balance changes when accounts change
   useEffect(() => {
-    const currentStats = getStats();
+    const currentStats = getStats(); // Get updated statistics
     setStats(currentStats);
     
-    // Animate balance change if it's different from last time
+    // Animate balance change if it's different from last time (skip initial load)
     if (currentStats.totalBalance !== lastBalance && lastBalance !== 0) {
       Animated.sequence([
         Animated.timing(balanceAnimation, {
-          toValue: 1.02,
+          toValue: 1.02, // Scale up slightly
           duration: 150,
           useNativeDriver: true,
         }),
         Animated.timing(balanceAnimation, {
-          toValue: 1,
+          toValue: 1, // Return to normal size
           duration: 150,
           useNativeDriver: true,
         }),
       ]).start();
     }
-    setLastBalance(currentStats.totalBalance);
+    setLastBalance(currentStats.totalBalance); // Update last balance for next comparison
   }, [accounts]);
 
+  // Account type definitions with labels and colors
   const sourceTypes = {
     upi: { label: 'UPI', color: '#3B82F6' },
     bank: { label: 'Bank Account', color: '#8B5CF6' },
@@ -76,48 +88,57 @@ const AccountsScreen = ({ navigation }) => {
     custom: { label: 'Custom', color: '#EF4444' },
   };
 
+  // Reset form to default values and clear editing state
   const resetForm = () => {
     setFormData({
       name: '',
       type: 'upi',
       balance: '',
     });
-    setEditingAccount(null);
+    setEditingAccount(null); // Clear editing state
   };
 
+  // Open modal for adding new account
   const openAddModal = () => {
-    resetForm();
+    resetForm(); // Reset form to default values
     setModalVisible(true);
   };
 
+  // Open modal for editing existing account
   const openEditModal = (account) => {
     setFormData({
       name: account.name,
       type: account.type,
-      balance: account.balance.toString(),
+      balance: account.balance.toString(), // Convert number to string for input
     });
-    setEditingAccount(account);
+    setEditingAccount(account); // Set account being edited
     setModalVisible(true);
   };
 
+  // Close modal and reset form
   const closeModal = () => {
     setModalVisible(false);
-    resetForm();
+    resetForm(); // Reset form when closing
   };
 
+  // Handle form submission for adding/editing accounts
   const handleSubmit = async () => {
     try {
+      // Validate account name
       if (!formData.name.trim()) {
         setErrorMessage('Please enter an account name');
         setErrorModalVisible(true);
         return;
       }
+      
+      // Validate balance (must be positive number)
       if (!formData.balance || parseFloat(formData.balance) < 0) {
         setErrorMessage('Please enter a valid balance');
         setErrorModalVisible(true);
         return;
       }
-      // Check for duplicate account names (case-insensitive)
+      
+      // Check for duplicate account names (case-insensitive, exclude current account when editing)
       const trimmedName = formData.name.trim();
       const existingAccount = accounts.find(account => 
         account.name.toLowerCase() === trimmedName.toLowerCase() && 
@@ -128,13 +149,19 @@ const AccountsScreen = ({ navigation }) => {
         setErrorModalVisible(true);
         return;
       }
+      
+      // Set up delayed loading for better UX
       setDelayedLoading(false);
       loadingTimeout = setTimeout(() => setDelayedLoading(true), 300);
+      
+      // Prepare account data
       const accountData = {
         name: trimmedName,
         type: formData.type,
         balance: parseFloat(formData.balance),
       };
+      
+      // Add or update account based on editing state
       if (editingAccount) {
         await updateAccount(editingAccount.id, accountData);
         setSuccessMsg('Account updated successfully');
@@ -142,6 +169,7 @@ const AccountsScreen = ({ navigation }) => {
         await addAccount(accountData);
         setSuccessMsg('Account added successfully');
       }
+      
       closeModal();
       setShowSuccess(true);
     } catch (error) {
@@ -153,36 +181,40 @@ const AccountsScreen = ({ navigation }) => {
     }
   };
 
+  // Open delete confirmation modal for account
   const handleDelete = (account) => {
-    setAccountToDelete(account);
-    setDeleteModalVisible(true);
+    setAccountToDelete(account); // Set account to be deleted
+    setDeleteModalVisible(true); // Show confirmation modal
   };
 
+  // Confirm and execute account deletion
   const confirmDelete = async () => {
-    if (!accountToDelete) return;
+    if (!accountToDelete) return; // Safety check
     
     try {
-      await deleteAccount(accountToDelete.id);
+      await deleteAccount(accountToDelete.id); // Delete from store
       setSuccessMsg('Account deleted successfully');
       setShowSuccess(true);
     } catch (error) {
       // You can add error modal here if needed
     } finally {
-      setDeleteModalVisible(false);
-      setAccountToDelete(null);
+      setDeleteModalVisible(false); // Close modal
+      setAccountToDelete(null); // Clear account reference
     }
   };
 
+  // Group accounts by their type for organized display
   const getAccountsByType = () => {
     const grouped = {};
     Object.keys(sourceTypes).forEach(type => {
-      grouped[type] = accounts.filter(account => account.type === type);
+      grouped[type] = accounts.filter(account => account.type === type); // Filter accounts by type
     });
     return grouped;
   };
 
-  const groupedAccounts = getAccountsByType();
+  const groupedAccounts = getAccountsByType(); // Get grouped accounts for rendering
 
+  // Icon mappings for different account types
   const CATEGORY_ICONS = {
     upi: CreditCard,
     bank: Banknote,
@@ -190,6 +222,8 @@ const AccountsScreen = ({ navigation }) => {
     wallet: ShoppingCart,
     custom: PiggyBank,
   };
+  
+  // Color mappings for different account types
   const CATEGORY_COLORS = {
     upi: '#3B82F6',
     bank: '#8B5CF6',
@@ -202,17 +236,17 @@ const AccountsScreen = ({ navigation }) => {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
       <StatusBar barStyle="light-content" />
       
-      {/* Header */}
+      {/* Header with navigation and title */}
       <View style={{ paddingTop: 20, paddingBottom: 20, paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
         <View style={styles.headerContent}>
           <AppButton
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.goBack()} // Navigate back to previous screen
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
           </AppButton>
           <Text style={styles.headerTitle}>Money Sources</Text>
-          <View style={styles.placeholder} />
+          <View style={styles.placeholder} /> {/* Spacer for balanced layout */}
         </View>
       </View>
 
@@ -221,7 +255,7 @@ const AccountsScreen = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Total Balance Card */}
+        {/* Total Balance Card with animated balance display */}
         <Surface style={[styles.balanceCard, { transform: [{ scale: balanceAnimation }] }]}>
           <LinearGradient
             colors={['rgba(59, 130, 246, 0.1)', 'rgba(37, 99, 235, 0.05)']}
@@ -229,7 +263,7 @@ const AccountsScreen = ({ navigation }) => {
           >
             <Text style={styles.balanceLabel}>Total Balance</Text>
             <Text style={styles.balanceAmount}>
-              {formatCurrency(stats.totalBalance)}
+              {formatCurrency(stats.totalBalance)} {/* Display formatted total balance */}
             </Text>
             <Text style={styles.balanceSubtext}>
               Across all accounts
@@ -237,12 +271,12 @@ const AccountsScreen = ({ navigation }) => {
           </LinearGradient>
         </Surface>
 
-        {/* Accounts by Type */}
+        {/* Accounts grouped by type for organized display */}
         {Object.entries(groupedAccounts).map(([type, typeAccounts]) => {
-          if (typeAccounts.length === 0) return null;
+          if (typeAccounts.length === 0) return null; // Skip empty account types
           
-          const typeInfo = sourceTypes[type];
-          const totalBalance = typeAccounts.reduce((sum, account) => sum + account.balance, 0);
+          const typeInfo = sourceTypes[type]; // Get type information
+          const totalBalance = typeAccounts.reduce((sum, account) => sum + account.balance, 0); // Calculate total for this type
 
           return (
             <View key={type} style={styles.typeSection}>
@@ -250,35 +284,36 @@ const AccountsScreen = ({ navigation }) => {
                 <View style={styles.typeInfo}>
                   <View style={[
                     styles.accountIcon,
-                    { backgroundColor: (CATEGORY_COLORS[type] || '#94A3B8') + '20' }
+                    { backgroundColor: (CATEGORY_COLORS[type] || '#94A3B8') + '20' } // Icon background with opacity
                   ]}>
                     {(() => {
-                      const Icon = CATEGORY_ICONS[type] || CreditCard;
+                      const Icon = CATEGORY_ICONS[type] || CreditCard; // Get icon for account type
                       return <Icon color={CATEGORY_COLORS[type] || '#94A3B8'} size={20} />;
                     })()}
                   </View>
                   <View>
                     <Text style={styles.typeTitle}>{typeInfo.label}</Text>
                     <Text style={styles.typeCount}>
-                      {typeAccounts.length} account{typeAccounts.length !== 1 ? 's' : ''}
+                      {typeAccounts.length} account{typeAccounts.length !== 1 ? 's' : ''} {/* Pluralize correctly */}
                     </Text>
                   </View>
                 </View>
                 <Text style={styles.typeBalance}>
-                  {formatCurrency(totalBalance)}
+                  {formatCurrency(totalBalance)} {/* Display total balance for this type */}
                 </Text>
               </View>
 
+              {/* Individual account cards within each type group */}
               {typeAccounts.map((account, index) => (
                 <Surface key={account.id || account.name + '-' + index} style={styles.accountCard}>
                   <View style={styles.accountRow}>
                     <View style={styles.accountInfo}>
                       <View style={[
                         styles.accountIcon,
-                        { backgroundColor: (CATEGORY_COLORS[account.type] || '#94A3B8') + '20' }
+                        { backgroundColor: (CATEGORY_COLORS[account.type] || '#94A3B8') + '20' } // Account-specific icon background
                       ]}>
                         {(() => {
-                          const Icon = CATEGORY_ICONS[account.type] || CreditCard;
+                          const Icon = CATEGORY_ICONS[account.type] || CreditCard; // Get icon for this account
                           return <Icon color={CATEGORY_COLORS[account.type] || '#94A3B8'} size={20} />;
                         })()}
                       </View>
@@ -290,18 +325,18 @@ const AccountsScreen = ({ navigation }) => {
                     
                     <View style={styles.accountActions}>
                       <Text style={styles.accountBalance}>
-                        {formatCurrency(account.balance)}
+                        {formatCurrency(account.balance)} {/* Display individual account balance */}
                       </Text>
                       <View style={styles.actionButtons}>
                         <TouchableOpacity
                           style={{ marginLeft: 8, padding: 4 }}
-                          onPress={() => openEditModal(account)}
+                          onPress={() => openEditModal(account)} // Open edit modal for this account
                         >
                           <Pencil color={theme.colors.textSubtle} size={18} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={{ marginLeft: 4, padding: 4 }}
-                          onPress={() => handleDelete(account)}
+                          onPress={() => handleDelete(account)} // Open delete confirmation for this account
                         >
                           <Trash2 color={theme.colors.error} size={18} />
                         </TouchableOpacity>
@@ -314,7 +349,7 @@ const AccountsScreen = ({ navigation }) => {
           );
         })}
 
-        {/* Empty State */}
+        {/* Empty state when no accounts exist */}
         {accounts.length === 0 && (
           <Surface style={styles.emptyCard}>
             <CreditCard color={theme.colors.textSubtle} size={48} style={{ marginBottom: 16 }} />
@@ -326,15 +361,15 @@ const AccountsScreen = ({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* Add Account FAB */}
+      {/* Floating Action Button for adding new accounts */}
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={openAddModal}
+        onPress={openAddModal} // Open add account modal
         color="white"
       />
 
-      {/* Add/Edit Account Modal */}
+      {/* Add/Edit Account Modal with form */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -345,14 +380,14 @@ const AccountsScreen = ({ navigation }) => {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {editingAccount ? 'Edit Account' : 'Add New Account'}
+                {editingAccount ? 'Edit Account' : 'Add New Account'} {/* Dynamic title based on mode */}
               </Text>
               <AppButton variant="text" onPress={closeModal}>
                 <Text style={{ fontSize: 28, color: '#F9FAFB' }}>{'\u00D7'}</Text>
               </AppButton>
             </View>
             <Surface style={{ borderRadius: 20, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, padding: theme.spacing.lg, margin: theme.spacing.lg }}>
-              {/* Account Type */}
+              {/* Account Type Selection */}
               <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Account Type</Text>
               <AppDropdown
                 items={Object.entries(sourceTypes).map(([key, type]) => ({
@@ -360,26 +395,27 @@ const AccountsScreen = ({ navigation }) => {
                   value: key,
                 }))}
                 selectedValue={formData.type}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))} // Update form data
                 style={{ marginBottom: theme.spacing.lg }}
               />
-              {/* Account Name */}
+              {/* Account Name Input */}
               <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Account Name</Text>
               <AppTextField
                 value={formData.name}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))} // Update form data
                 placeholder="e.g., GPay, SBI Bank, Wallet"
                 style={{ marginBottom: theme.spacing.lg }}
               />
-              {/* Balance */}
+              {/* Balance Input */}
               <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Balance</Text>
               <AppTextField
                 value={formData.balance}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, balance: text }))}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, balance: text }))} // Update form data
                 keyboardType="numeric"
                 placeholder="0.00"
                 style={{ marginBottom: theme.spacing.lg }}
               />
+              {/* Submit button with dynamic text and loading state */}
               <AppButton
                 style={{ marginTop: theme.spacing.lg, alignSelf: 'center', minWidth: 180, ...theme.button.filled, opacity: delayedLoading ? 0.6 : 1 }}
                 onPress={handleSubmit}
@@ -392,6 +428,7 @@ const AccountsScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+      {/* Success message snackbar */}
       <Snackbar
         visible={showSuccess}
         onDismiss={() => setShowSuccess(false)}
@@ -401,7 +438,7 @@ const AccountsScreen = ({ navigation }) => {
         <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>{successMsg}</Text>
       </Snackbar>
 
-      {/* Custom Delete Confirmation Modal */}
+      {/* Delete confirmation modal with warning */}
       <AppModal
         visible={deleteModalVisible}
         onDismiss={() => {
@@ -427,14 +464,14 @@ const AccountsScreen = ({ navigation }) => {
           {
             text: 'Delete',
             style: 'destructive',
-            onPress: confirmDelete
+            onPress: confirmDelete // Execute deletion
           }
         ]}
         showCloseButton={false}
         blurBackground={true}
       />
 
-      {/* Custom Error Modal */}
+      {/* Error modal for displaying validation and operation errors */}
       <AppModal
         visible={errorModalVisible}
         onDismiss={() => setErrorModalVisible(false)}

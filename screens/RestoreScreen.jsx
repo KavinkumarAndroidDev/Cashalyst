@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, Platform, StatusBar } from 'react-native';
-import * as DocumentPicker from 'expo-document-picker';
+import React, { useState } from 'react';//import react and state hook
+import { View, Text, Platform, StatusBar } from 'react-native';//RN UI components
+import * as DocumentPicker from 'expo-document-picker'; //Document picker API
 import AppButton from '../components/AppButton';
 import AppModal from '../components/AppModal';
 import { Download, ArrowLeft } from 'lucide-react-native';
@@ -13,17 +13,18 @@ import useStore from '../hooks/useStore';
 import { CommonActions } from '@react-navigation/native';
 
 const RestoreScreen = ({ navigation }) => {
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isRestoring, setIsRestoring] = useState(false);
-  const [restoreSuccess, setRestoreSuccess] = useState(false);
-
+  //state variables
+  const [showInfoModal, setShowInfoModal] = useState(false);//info modal visibility
+  const [showErrorModal, setShowErrorModal] = useState(false);//error success modal visibility
+  const [errorMessage, setErrorMessage] = useState('');//modal message text
+  const [isRestoring, setIsRestoring] = useState(false);//loading state
+  const [restoreSuccess, setRestoreSuccess] = useState(false);//success flag
+  //restore from device handler
   const handleRestoreFromDevice = async () => {
     setErrorMessage('No automatic backup found on this device.');
     setShowErrorModal(true);
   };
-
+  //restore from file handler
   const handleRestoreFromFile = async () => {
     setIsRestoring(true);
     try {

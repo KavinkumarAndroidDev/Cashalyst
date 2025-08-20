@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// Core React Native and UI imports
 import {
   View,
   Text,
@@ -19,22 +20,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Surface, Searchbar, Chip, IconButton, Portal, Provider as PaperProvider, Snackbar } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import useStore from '../hooks/useStore';
-import { formatCurrency } from '../utils/formatCurrency';
-import AppButton from '../components/AppButton';
-import AppTextField from '../components/AppTextField';
-import AppDropdown from '../components/AppDropdown';
-import AppModal from '../components/AppModal';
-import { ArrowLeft, Pencil, PiggyBank, Coffee, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, Trash2, Filter, RefreshCw, X, SlidersHorizontal, ArrowDownCircle, ArrowUpCircle } from 'lucide-react-native';
-import AppSegmentedButton from '../components/AppSegmentedButton';
-import theme from '../utils/theme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import AppSearchBar from '../components/AppSearchBar';
-import { responsiveFontSize, moderateScale } from '../utils/scale';
-import { useFocusEffect } from '@react-navigation/native';
+import useStore from '../hooks/useStore'; // Custom hook for global state
+import { formatCurrency } from '../utils/formatCurrency'; // Utility for formatting currency
+import AppButton from '../components/AppButton'; // Custom button component
+import AppTextField from '../components/AppTextField'; // Custom text field
+import AppDropdown from '../components/AppDropdown'; // Custom dropdown
+import AppModal from '../components/AppModal'; // Custom modal
+import { ArrowLeft, Pencil, PiggyBank, Coffee, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, Trash2, Filter, RefreshCw, X, SlidersHorizontal, ArrowDownCircle, ArrowUpCircle } from 'lucide-react-native'; // Icon imports
+import AppSegmentedButton from '../components/AppSegmentedButton'; // Custom segmented button
+import theme from '../utils/theme'; // Theme object for colors, fonts, etc.
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; // For safe area padding
+import DateTimePicker from '@react-native-community/datetimepicker'; // Date picker for filters
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Persistent storage for filters/views
+import AppSearchBar from '../components/AppSearchBar'; // Custom search bar
+import { responsiveFontSize, moderateScale } from '../utils/scale'; // Responsive scaling utilities
+import { useFocusEffect } from '@react-navigation/native'; // Navigation focus effect
 
+// Mapping of categories to icons
 const CATEGORY_ICONS = {
   'Food & Dining': Coffee,
   'Transportation': Car,
@@ -47,6 +49,7 @@ const CATEGORY_ICONS = {
   'Other': PiggyBank,
 };
 
+// Mapping of categories to colors
 const getCategoryColor = (category) => {
   const colors = {
     'Food & Dining': '#EF4444',
@@ -62,9 +65,10 @@ const getCategoryColor = (category) => {
   return colors[category] || '#94A3B8';
 };
 
-const FILTERS_KEY = 'history_last_filters';
-const SAVED_VIEWS_KEY = 'history_saved_views';
+const FILTERS_KEY = 'history_last_filters'; // Key for storing last used filters
+const SAVED_VIEWS_KEY = 'history_saved_views'; // Key for storing saved views
 
+// Expense categories
 const EXPENSE_CATEGORIES = [
   'Food & Dining',
   'Transportation',
@@ -76,6 +80,7 @@ const EXPENSE_CATEGORIES = [
   'Travel',
   'Other',
 ];
+// Income categories
 const INCOME_CATEGORIES = [
   'Salary',
   'Freelance',
@@ -88,32 +93,34 @@ const INCOME_CATEGORIES = [
 // Helper to get all unique categories
 const ALL_CATEGORIES = Array.from(new Set([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]));
 
+// Main HistoryScreen component
 const HistoryScreen = ({ navigation }) => {
-  const { transactions, accounts, deleteTransaction, loadTransactions } = useStore();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
-  const [selectedSource, setSelectedSource] = useState('all');
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
-  const insets = useSafeAreaInsets();
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [dateRange, setDateRange] = useState({ from: null, to: null });
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [datePickerMode, setDatePickerMode] = useState('from');
-  const [showSubtotals, setShowSubtotals] = useState(false);
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [modalType, setModalType] = useState(selectedType);
-  const [modalCategory, setModalCategory] = useState(selectedCategory);
-  const [modalSource, setModalSource] = useState(selectedSource);
-  const [modalDateRange, setModalDateRange] = useState(dateRange);
-  const [showModalDatePicker, setShowModalDatePicker] = useState(false);
-  const [modalDatePickerMode, setModalDatePickerMode] = useState('from');
-  const [showFilterTip, setShowFilterTip] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
-  const [showFilterReset, setShowFilterReset] = useState(false);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const { transactions, accounts, deleteTransaction, loadTransactions } = useStore(); // Get global state and actions
+  const [searchQuery, setSearchQuery] = useState(''); // Search query state
+  const [selectedType, setSelectedType] = useState('all'); // Filter: transaction type
+  const [selectedSource, setSelectedSource] = useState('all'); // Filter: source/account
+  const [filteredTransactions, setFilteredTransactions] = useState([]); // Filtered transactions list
+  const insets = useSafeAreaInsets(); // Safe area insets
+  const [selectedCategory, setSelectedCategory] = useState('all'); // Filter: category
+  const [dateRange, setDateRange] = useState({ from: null, to: null }); // Filter: date range
+  const [showDatePicker, setShowDatePicker] = useState(false); // Date picker visibility
+  const [datePickerMode, setDatePickerMode] = useState('from'); // Date picker mode
+  const [showSubtotals, setShowSubtotals] = useState(false); // Show income/expense subtotals
+  const [filterModalVisible, setFilterModalVisible] = useState(false); // Filter modal visibility
+  const [modalType, setModalType] = useState(selectedType); // Modal: transaction type
+  const [modalCategory, setModalCategory] = useState(selectedCategory); // Modal: category
+  const [modalSource, setModalSource] = useState(selectedSource); // Modal: source
+  const [modalDateRange, setModalDateRange] = useState(dateRange); // Modal: date range
+  const [showModalDatePicker, setShowModalDatePicker] = useState(false); // Modal: date picker visibility
+  const [modalDatePickerMode, setModalDatePickerMode] = useState('from'); // Modal: date picker mode
+  const [showFilterTip, setShowFilterTip] = useState(false); // Show filter tip snackbar
+  const [deleteLoading, setDeleteLoading] = useState(false); // Delete loading state
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false); // Show delete success snackbar
+  const [showFilterReset, setShowFilterReset] = useState(false); // Show filter reset snackbar
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false); // Delete confirmation modal
+  const [transactionToDelete, setTransactionToDelete] = useState(null); // Transaction to delete
 
+  // Calculate total amount for filtered transactions
   const getTotalAmount = () => {
     return filteredTransactions.reduce((total, transaction) => {
       if (transaction.type === 'income') {
@@ -124,16 +131,17 @@ const HistoryScreen = ({ navigation }) => {
     }, 0);
   };
 
-  const [animatedTotal] = useState(new Animated.Value(Math.abs(getTotalAmount())));
-  const [lastTotal, setLastTotal] = useState(Math.abs(getTotalAmount()));
-  const [collapsedMonths, setCollapsedMonths] = useState({});
-  const [visibleCounts, setVisibleCounts] = useState({});
-  const PAGE_SIZE = 20;
-  const [savedViews, setSavedViews] = useState([]);
+  const [animatedTotal] = useState(new Animated.Value(Math.abs(getTotalAmount()))); // Animated total for UI
+  const [lastTotal, setLastTotal] = useState(Math.abs(getTotalAmount())); // Last total for animation
+  const [collapsedMonths, setCollapsedMonths] = useState({}); // Track collapsed month sections
+  const [visibleCounts, setVisibleCounts] = useState({}); // Track visible transaction count per month
+  const PAGE_SIZE = 20; // Pagination size for transactions
+  const [savedViews, setSavedViews] = useState([]); // Saved filter views
 
-  const windowWidth = Dimensions.get('window').width;
-  const isSmallScreen = windowWidth < 400;
+  const windowWidth = Dimensions.get('window').width; // Get screen width
+  const isSmallScreen = windowWidth < 400; // Responsive check
 
+  // Load filters and saved views from AsyncStorage on mount
   useEffect(() => {
     (async () => {
       const last = await AsyncStorage.getItem(FILTERS_KEY);
@@ -156,10 +164,12 @@ const HistoryScreen = ({ navigation }) => {
     })();
   }, []);
 
+  // Persist filters to AsyncStorage when changed
   useEffect(() => {
     AsyncStorage.setItem(FILTERS_KEY, JSON.stringify({ selectedType, selectedSource, selectedCategory, dateRange, searchQuery }));
   }, [selectedType, selectedSource, selectedCategory, dateRange, searchQuery]);
 
+  // Save current filter view
   const saveCurrentView = async () => {
     const newView = {
       name: `View ${savedViews.length + 1}`,
@@ -170,6 +180,7 @@ const HistoryScreen = ({ navigation }) => {
     await AsyncStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(updated));
   };
 
+  // Apply a saved filter view
   const applySavedView = (view) => {
     setSelectedType(view.filters.selectedType);
     setSelectedSource(view.filters.selectedSource);
@@ -178,6 +189,7 @@ const HistoryScreen = ({ navigation }) => {
     setSearchQuery(view.filters.searchQuery);
   };
 
+  // Determine available categories based on selected type
   const availableCategories = selectedType === 'income'
     ? INCOME_CATEGORIES
     : EXPENSE_CATEGORIES;
@@ -187,10 +199,12 @@ const HistoryScreen = ({ navigation }) => {
     }
   }, [selectedType]);
 
+  // Filter transactions whenever dependencies change
   useEffect(() => {
     filterTransactions();
   }, [transactions, searchQuery, selectedType, selectedSource, selectedCategory, dateRange]);
 
+  // Animate total amount when filtered transactions change
   useEffect(() => {
     const newTotal = Math.abs(getTotalAmount());
     Animated.timing(animatedTotal, {
@@ -202,12 +216,14 @@ const HistoryScreen = ({ navigation }) => {
     setLastTotal(newTotal);
   }, [filteredTransactions]);
 
+  // Reload transactions when screen is focused
   useFocusEffect(
     React.useCallback(() => {
       loadTransactions();
     }, [loadTransactions])
   );
 
+  // Handlers for search bar
   const handleSearchChange = (text) => {
     setSearchQuery(text);
   };
@@ -220,6 +236,7 @@ const HistoryScreen = ({ navigation }) => {
     setSearchQuery('');
   };
 
+  // Main transaction filtering logic
   const filterTransactions = () => {
     let filtered = [...transactions];
 
@@ -256,6 +273,7 @@ const HistoryScreen = ({ navigation }) => {
     setFilteredTransactions(filtered);
   };
 
+  // Get icon for transaction type (not used for category icons)
   const getTransactionIcon = (type) => {
     switch (type) {
       case 'income': return '💰';
@@ -264,6 +282,7 @@ const HistoryScreen = ({ navigation }) => {
     }
   };
 
+  // Get color for transaction type
   const getTransactionColor = (type) => {
     switch (type) {
       case 'income': return '#10B981';
@@ -272,6 +291,7 @@ const HistoryScreen = ({ navigation }) => {
     }
   };
 
+  // Format transaction date for display
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -291,11 +311,13 @@ const HistoryScreen = ({ navigation }) => {
     }
   };
 
+  // Handler for delete button
   const handleDelete = (transaction) => {
     setTransactionToDelete(transaction);
     setDeleteModalVisible(true);
   };
 
+  // Confirm deletion of transaction
   const confirmDelete = async () => {
     if (!transactionToDelete) return;
     
@@ -316,6 +338,7 @@ const HistoryScreen = ({ navigation }) => {
     }
   };
 
+  // Calculate income and expense subtotals
   const getIncomeExpenseTotals = () => {
     let income = 0, expense = 0;
     filteredTransactions.forEach(t => {
@@ -325,6 +348,7 @@ const HistoryScreen = ({ navigation }) => {
     return { income, expense };
   };
 
+  // Group transactions by month for sectioned display
   const groupByMonth = (txs) => {
     const groups = {};
     txs.forEach(tx => {
@@ -336,6 +360,7 @@ const HistoryScreen = ({ navigation }) => {
     return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
   };
 
+  // Prepare month sections for FlatList
   const monthSections = groupByMonth(filteredTransactions).map(([month, txs]) => {
     const visible = visibleCounts[month] || PAGE_SIZE;
     return {
@@ -347,13 +372,16 @@ const HistoryScreen = ({ navigation }) => {
     };
   });
 
+  // Toggle collapse/expand for month section
   const toggleMonth = (month) => {
     setCollapsedMonths(prev => ({ ...prev, [month]: !prev[month] }));
   };
+  // Load more transactions for a month
   const loadMoreMonth = (month) => {
     setVisibleCounts(prev => ({ ...prev, [month]: (prev[month] || PAGE_SIZE) + PAGE_SIZE }));
   };
 
+  // Open filter modal and sync modal state
   const openFilterModal = () => {
     setModalType(selectedType);
     setModalCategory(selectedCategory);
@@ -362,6 +390,7 @@ const HistoryScreen = ({ navigation }) => {
     setFilterModalVisible(true);
   };
 
+  // Apply filters from modal
   const applyModalFilters = () => {
     setSelectedType(modalType);
     setSelectedCategory(modalCategory);
@@ -370,6 +399,7 @@ const HistoryScreen = ({ navigation }) => {
     setFilterModalVisible(false);
   };
 
+  // Reset modal filters to default
   const resetModalFilters = () => {
     setModalType('all');
     setModalCategory('all');
@@ -377,22 +407,23 @@ const HistoryScreen = ({ navigation }) => {
     setModalDateRange({ from: null, to: null });
   };
 
-  // In modal: category options logic
+  // Get categories for modal dropdown based on type
   const getModalCategories = () => {
     if (modalType === 'all') return ALL_CATEGORIES;
     if (modalType === 'income') return INCOME_CATEGORIES;
     return EXPENSE_CATEGORIES;
   };
 
-  // In modal: dropdown style
+  // Style for modal dropdown
   const modalDropdownStyle = { width: '100%', alignSelf: 'flex-start', height: 44, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.background, justifyContent: 'center', marginBottom: 0 };
 
-  // In modal: button style
+  // Style for modal buttons
   const modalButtonStyle = { flex: 1, minHeight: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 16, paddingHorizontal: 0, paddingVertical: 0 };
 
-  // Helper: are filters active?
+  // Check if any filters are active
   const filtersActive = selectedType !== 'all' || selectedSource !== 'all' || selectedCategory !== 'all' || searchQuery.trim() !== '' || dateRange.from || dateRange.to;
 
+  // Render header for transaction list
   const renderHeader = () => (
     <View style={{ backgroundColor: theme.colors.background, paddingBottom: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -823,6 +854,7 @@ const HistoryScreen = ({ navigation }) => {
   );
 };
 
+// Styles for the screen and components
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1050,9 +1082,8 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     flex: 1,
     textAlign: 'right',
-    marginLeft: 8,
-    letterSpacing: 0.2,
-  },
+    marginLeft:8,
+    letterSpacing:0.2,
+  }  
 });
-
-export default HistoryScreen; 
+export default HistoryScreen;

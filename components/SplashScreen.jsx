@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
 
+// Collection of financial wisdom quotes for splash screen
 const QUOTES = [
   { text: "A penny saved is a penny earned.", author: "Benjamin Franklin" },
   { text: "Wealth consists not in having great possessions, but in having few wants.", author: "Epictetus" },
@@ -22,10 +23,10 @@ const QUOTES = [
   { text: "You must gain control over your money or the lack of it will forever control you.", author: "Dave Ramsey" },
   { text: "Money is a terrible master but an excellent servant.", author: "P.T. Barnum" },
   { text: "A budget is telling your money where to go instead of wondering where it went.", author: "John C. Maxwell" },
-  { text: "Try to save something while your salary is small; it’s impossible to save after you begin to earn more.", author: "Jack Benny" },
+  { text: "Try to save something while your salary is small; it's impossible to save after you begin to earn more.", author: "Jack Benny" },
   { text: "Richness is not about what you have, but what you can give.", author: "Unknown" },
-  { text: "The real measure of your wealth is how much you’d be worth if you lost all your money.", author: "Unknown" },
-  { text: "It’s not your salary that makes you rich, it’s your spending habits.", author: "Charles A. Jaffe" },
+  { text: "The real measure of your wealth is how much you'd be worth if you lost all your money.", author: "Unknown" },
+  { text: "It's not your salary that makes you rich, it's your spending habits.", author: "Charles A. Jaffe" },
   { text: "He who will not economize will have to agonize.", author: "Confucius" },
   { text: "If you would be wealthy, think of saving as well as getting.", author: "Benjamin Franklin" },
   { text: "Being in control of your finances is a great stress reliever.", author: "Unknown" },
@@ -41,11 +42,11 @@ const QUOTES = [
   { text: "You must learn to save first and spend afterwards.", author: "John Poole" },
   { text: "Saving must become a priority, not just a thought.", author: "Dave Ramsey" },
   { text: "Money grows on the tree of persistence.", author: "Japanese Proverb" },
-  { text: "Do not tell me where your priorities are. Show me where you spend your money and I’ll tell you what they are.", author: "James W. Frick" },
-  { text: "If saving money is wrong, I don’t want to be right.", author: "William Shatner" },
+  { text: "Do not tell me where your priorities are. Show me where you spend your money and I'll tell you what they are.", author: "James W. Frick" },
+  { text: "If saving money is wrong, I don't want to be right.", author: "William Shatner" },
   { text: "The quickest way to double your money is to fold it in half and put it back in your pocket.", author: "Will Rogers" },
   { text: "A wise person should have money in their head, but not in their heart.", author: "Jonathan Swift" },
-  { text: "Don’t tell me what you value, show me your budget, and I’ll tell you what you value.", author: "Joe Biden" },
+  { text: "Don't tell me what you value, show me your budget, and I'll tell you what you value.", author: "Joe Biden" },
   { text: "Opportunity is missed by most people because it is dressed in overalls and looks like work.", author: "Thomas Edison" },
   { text: "Small daily savings add up to big money.", author: "Unknown" }
 ];
@@ -56,24 +57,29 @@ const SplashScreen = ({ onFinish }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [logoAnim] = useState(new Animated.Value(0));
 
+  // Select a random quote on component mount
   useEffect(() => {
-    // Pick a random quote
     const randomIndex = Math.floor(Math.random() * QUOTES.length);
     setQuote(QUOTES[randomIndex]);
   }, []);
 
+  // Handle animations and auto-finish timer
   useEffect(() => {
+    // Animate logo appearance
     Animated.timing(logoAnim, {
       toValue: 1,
       duration: 900,
       useNativeDriver: true,
     }).start();
+    
+    // Animate quote appearance with delay
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1200,
       delay: 500,
       useNativeDriver: true,
     }).start();
+    
     // Auto-finish after 2.8 seconds
     const timer = setTimeout(() => {
       onFinish();
@@ -88,7 +94,7 @@ const SplashScreen = ({ onFinish }) => {
         style={styles.background}
       >
         <View style={styles.centerContent}>
-          {/* Logo */}
+          {/* Animated logo */}
           <Animated.View style={{
             opacity: logoAnim,
             transform: [{ scale: logoAnim }],
@@ -97,13 +103,15 @@ const SplashScreen = ({ onFinish }) => {
           }}>
             <Text style={styles.logo}>Cashalyst</Text>
           </Animated.View>
-          {/* Quote with icon and attribution */}
+          
+          {/* Animated quote display */}
           <Animated.View style={{ opacity: fadeAnim, marginTop: 36, alignItems: 'center' }}>
             <Text style={styles.quoteIcon}>❝</Text>
             <Text style={styles.quoteText} numberOfLines={2} ellipsizeMode="tail">{quote.text}</Text>
             <Text style={styles.quoteAuthor}>— {quote.author}</Text>
           </Animated.View>
-          {/* Progress bar */}
+          
+          {/* Loading progress indicator */}
           <Animated.View style={{ opacity: fadeAnim, marginTop: 48 }}>
             <View style={styles.progressBar}>
               <View style={styles.progressFill} />

@@ -3,12 +3,15 @@ import { TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-nat
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
 
+// Button style variants
 const VARIANT_STYLES = {
   filled: theme.button.filled,
   outlined: theme.button.outlined,
   text: theme.button.text,
   danger: theme.button.danger,
 };
+
+// Text styles for each variant
 const VARIANT_LABELS = {
   filled: theme.button.filledLabel,
   outlined: theme.button.outlinedLabel,
@@ -28,16 +31,19 @@ const AppButton = ({
   children,
   ...props
 }) => {
+  // Combine base styles with conditional and custom styles
   const buttonStyle = [
     VARIANT_STYLES[variant] || VARIANT_STYLES.filled,
     disabled ? { opacity: 0.6 } : {},
     fullWidth ? { alignSelf: 'stretch' } : {},
     style,
   ];
+
   const textStyle = [
     VARIANT_LABELS[variant] || VARIANT_LABELS.filled,
     labelStyle,
   ];
+
   return (
     <TouchableOpacity
       style={buttonStyle}

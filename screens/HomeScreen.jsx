@@ -25,6 +25,7 @@ import notificationService from '../utils/notificationService';
 
 const { width } = Dimensions.get('window');
 
+// Icon mappings for different transaction categories
 const CATEGORY_ICONS = {
   'Food & Dining': Coffee,
   'Transportation': Car,
@@ -38,6 +39,7 @@ const CATEGORY_ICONS = {
   'Other': PiggyBank,
 };
 
+// Get color for transaction category
 const getCategoryColor = (category) => {
   const colors = {
     'Food & Dining': '#EF4444',
@@ -50,61 +52,72 @@ const getCategoryColor = (category) => {
     'Travel': '#84CC16',
     'Other': '#94A3B8',
   };
-  return colors[category] || '#94A3B8';
+  return colors[category] || '#94A3B8'; // Return default color if category not found
 };
 
 const HomeScreen = ({ navigation }) => {
+  // Get account data, transactions, and statistics from Zustand store
   const { accounts, transactions, getStats } = useStore();
+  
+  // Statistics state for financial overview
   const [stats, setStats] = useState({
     totalBalance: 0,
     monthlyIncome: 0,
     monthlyExpense: 0,
     monthlySavings: 0,
   });
+  
+  // Animation state for balance changes
   const [balanceAnimation] = useState(new Animated.Value(1));
-  const [lastBalance, setLastBalance] = useState(0);
-  const [username, setUsername] = useState('');
+  const [lastBalance, setLastBalance] = useState(0); // Track previous balance for animations
+  
+  // User state
+  const [username, setUsername] = useState(''); // User's name from settings
 
+  // Update statistics and animate balance changes when data changes
   useEffect(() => {
-    const currentStats = getStats();
+    const currentStats = getStats(); // Get updated statistics
     setStats(currentStats);
     
-    // Animate balance change if it's different from last time
+    // Animate balance change if it's different from last time (skip initial load)
     if (currentStats.totalBalance !== lastBalance && lastBalance !== 0) {
       Animated.sequence([
         Animated.timing(balanceAnimation, {
-          toValue: 1.05,
+          toValue: 1.05, // Scale up slightly
           duration: 200,
           useNativeDriver: true,
         }),
         Animated.timing(balanceAnimation, {
-          toValue: 1,
+          toValue: 1, // Return to normal size
           duration: 200,
           useNativeDriver: true,
         }),
       ]).start();
     }
-    setLastBalance(currentStats.totalBalance);
+    setLastBalance(currentStats.totalBalance); // Update last balance for next comparison
   }, [accounts, transactions]);
 
+  // Load user settings and initialize notifications on component mount
   useEffect(() => {
     (async () => {
-      const saved = await AsyncStorage.getItem('username');
+      const saved = await AsyncStorage.getItem('username'); // Load saved username
       if (saved) setUsername(saved);
       // Request notification permission on first launch
       await notificationService.initialize();
     })();
   }, []);
 
+  // Get recent transactions sorted by date (most recent first, limit to 5)
   const recentTransactions = transactions
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 5);
+    .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date descending
+    .slice(0, 5); // Take only the 5 most recent transactions
 
+  // Get color for transaction type
   const getTransactionColor = (type) => {
     switch (type) {
-      case 'income': return '#10B981';
-      case 'expense': return '#EF4444';
-      default: return '#94A3B8';
+      case 'income': return '#10B981'; // Green for income
+      case 'expense': return '#EF4444'; // Red for expense
+      default: return '#94A3B8'; // Gray for unknown type
     }
   };
 
@@ -112,15 +125,15 @@ const HomeScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" />
       
-      {/* Header */}
+      {/* Header with greeting and user profile */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View>
             <Text style={styles.greeting}>Welcome back</Text>
-            {/* Only show app name if no username */}
+            {/* Show username or app name based on user settings */}
             {!username && <Text style={styles.headerTitle}>Cashalyst</Text>}
             {username && (
-              <Text style={[styles.headerTitle, { fontSize: 24 }]}>{username.trim().split(' ')[0]}</Text>
+              <Text style={[styles.headerTitle, { fontSize: 24 }]}>{username.trim().split(' ')[0]}</Text> // Show first name only
             )}
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -136,16 +149,16 @@ const HomeScreen = ({ navigation }) => {
                   marginRight: 2,
                 }}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('Settings')}
+                onPress={() => navigation.navigate('Settings')} // Navigate to settings
               >
                 <Text style={{ color: theme.colors.buttonText || '#fff', fontFamily: theme.font.family.bold, fontSize: 18 }}>
-                  {username.trim().charAt(0).toUpperCase()}
+                  {username.trim().charAt(0).toUpperCase()} {/* Show user's first initial */}
                 </Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 style={[styles.accountsButton, { width: 40, height: 40, paddingHorizontal: 0, alignItems: 'center', justifyContent: 'center' }]}
-                onPress={() => navigation.navigate('Settings')}
+                onPress={() => navigation.navigate('Settings')} // Navigate to settings
               >
                 <Settings color="#F9FAFB" size={20} />
               </TouchableOpacity>
@@ -159,7 +172,7 @@ const HomeScreen = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Total Balance Card - Glassmorphic */}
+        {/* Total Balance Card with animated balance display */}
         <Surface style={[styles.balanceCard, { transform: [{ scale: balanceAnimation }] }]}>
           <LinearGradient
             colors={["rgba(59, 130, 246, 0.18)", "rgba(37, 99, 235, 0.08)"]}
@@ -169,13 +182,13 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.balanceLabel}>Total Balance</Text>
               <Text style={styles.balanceAmount}>{formatCurrency(stats.totalBalance)}</Text>
               <View style={styles.balanceTrend}>
-                <Text style={styles.trendText}> {stats.monthlySavings >= 0 ? '+' : ''}{formatCurrency(stats.monthlySavings)} this month</Text>
+                <Text style={styles.trendText}> {stats.monthlySavings >= 0 ? '+' : ''}{formatCurrency(stats.monthlySavings)} this month</Text> {/* Show monthly savings trend */}
               </View>
             </View>
           </LinearGradient>
         </Surface>
 
-        {/* Monthly Overview */}
+        {/* Monthly Overview with Income and Expenses */}
         <View style={styles.overviewSection}>
           <Text style={styles.sectionTitle}>This Month</Text>
           <View style={styles.overviewGrid}>
@@ -196,13 +209,13 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Quick Actions */}
+        {/* Quick Actions Grid for Navigation */}
         <View style={styles.actionsSection}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => navigation.navigate('AddTransaction')}
+              onPress={() => navigation.navigate('AddTransaction')} // Navigate to add transaction screen
             >
               <View style={styles.actionContent}>
                 <PlusCircle color="#3B82F6" size={24} />
@@ -211,7 +224,7 @@ const HomeScreen = ({ navigation }) => {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => navigation.navigate('History')}
+              onPress={() => navigation.navigate('History')} // Navigate to transaction history
             >
               <View style={styles.actionContent}>
                 <List color="#94A3B8" size={24} />
@@ -220,7 +233,7 @@ const HomeScreen = ({ navigation }) => {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => navigation.navigate('Insights')}
+              onPress={() => navigation.navigate('Insights')} // Navigate to insights screen
             >
               <View style={styles.actionContent}>
                 <BarChart2 color="#94A3B8" size={24} />
@@ -229,7 +242,7 @@ const HomeScreen = ({ navigation }) => {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => navigation.navigate('Accounts')}
+              onPress={() => navigation.navigate('Accounts')} // Navigate to accounts screen
             >
               <View style={styles.actionContent}>
                 <Wallet color="#94A3B8" size={24} />
@@ -239,11 +252,11 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Recent Transactions */}
+        {/* Recent Transactions List */}
         <View style={styles.transactionsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('History')}>
+            <TouchableOpacity onPress={() => navigation.navigate('History')}> {/* Navigate to full history */}
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -256,7 +269,7 @@ const HomeScreen = ({ navigation }) => {
               </Text>
               <TouchableOpacity
                 style={styles.emptyButton}
-                onPress={() => navigation.navigate('AddTransaction')}
+                onPress={() => navigation.navigate('AddTransaction')} // Navigate to add transaction
               >
                 <Text style={styles.emptyButtonText}>Add Transaction</Text>
               </TouchableOpacity>
@@ -268,7 +281,7 @@ const HomeScreen = ({ navigation }) => {
                   <View style={styles.transactionRow}>
                     <View style={styles.transactionIconWrap}>
                       {(() => {
-                        const Icon = CATEGORY_ICONS[transaction.category] || PiggyBank;
+                        const Icon = CATEGORY_ICONS[transaction.category] || PiggyBank; // Get icon for category
                         return <Icon color={getCategoryColor(transaction.category)} size={20} />;
                       })()}
                     </View>
@@ -277,14 +290,14 @@ const HomeScreen = ({ navigation }) => {
                       <View style={styles.transactionMetaRow}>
                         <Text style={styles.transactionMeta}>{transaction.category}</Text>
                         <Text style={styles.transactionMeta}>•</Text>
-                        <Text style={[styles.transactionMeta, { color: '#3B82F6', fontWeight: '600' }]}>{accounts.find(acc => acc.id === transaction.sourceId)?.name || transaction.source}</Text>
+                        <Text style={[styles.transactionMeta, { color: '#3B82F6', fontWeight: '600' }]}>{accounts.find(acc => acc.id === transaction.sourceId)?.name || transaction.source}</Text> {/* Show account name */}
                         <Text style={styles.transactionMeta}>•</Text>
-                        <Text style={styles.transactionMeta}>{new Date(transaction.date).toLocaleDateString()}</Text>
+                        <Text style={styles.transactionMeta}>{new Date(transaction.date).toLocaleDateString()}</Text> {/* Show formatted date */}
                       </View>
                     </View>
                     <View style={styles.transactionAmountWrap}>
-                                              <Text style={[styles.amountText, { color: transaction.type === 'income' ? '#10B981' : '#EF4444' }]}>
-                        {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}
+                      <Text style={[styles.amountText, { color: transaction.type === 'income' ? '#10B981' : '#EF4444' }]}>
+                        {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)} {/* Show amount with sign */}
                       </Text>
                     </View>
                   </View>
@@ -295,11 +308,11 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button for Quick Transaction Addition */}
       <FAB
         icon={({ color, size }) => <PlusCircle color={color} size={size + 2} />}
         style={styles.fab}
-        onPress={() => navigation.navigate('AddTransaction')}
+        onPress={() => navigation.navigate('AddTransaction')} // Navigate to add transaction screen
         color="#fff"
       />
     </SafeAreaView>

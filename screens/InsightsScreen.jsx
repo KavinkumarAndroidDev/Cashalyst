@@ -35,9 +35,10 @@ import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
 import AppSegmentedButton from '../components/AppSegmentedButton';
-
+// get device window width for responsive charts 
 const { width } = Dimensions.get('window');
-
+//map of category names to icon components(lucide icons)
+//used when rendering category list items to show a relevant icon 
 const CATEGORY_ICONS = {
   'Food & Dining': Coffee,
   'Transportation': Car,
@@ -51,8 +52,11 @@ const CATEGORY_ICONS = {
 };
 
 const InsightsScreen = ({ navigation }) => {
+  //pull transactions and accounts from global store(custom hook)
   const { transactions, accounts } = useStore();
+  //selectedPeriod determines whether we show week/month/year views
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  //local state holding summary statistics
   const [stats, setStats] = useState({
     totalBalance: 0,
     monthlyIncome: 0,
@@ -61,8 +65,10 @@ const InsightsScreen = ({ navigation }) => {
   });
 
   // Filtering logic
+  //returns filtered transactions by selectedPeriod
   const getFilteredTransactions = () => {
     const today = new Date();
+    //for 'week' view include today and last 6 days 
     if (selectedPeriod === 'week') {
       const start = new Date(today);
       start.setDate(today.getDate() - 6);
@@ -71,6 +77,7 @@ const InsightsScreen = ({ navigation }) => {
         return d >= start && d <= today;
       });
     } else if (selectedPeriod === 'month') {
+      // for 'month' view include transactions in current month and year
       const month = today.getMonth();
       const year = today.getFullYear();
       return transactions.filter(t => {
@@ -78,16 +85,20 @@ const InsightsScreen = ({ navigation }) => {
         return d.getMonth() === month && d.getFullYear() === year;
       });
     } else if (selectedPeriod === 'year') {
+      //for 'year' view include transactions in current year
       const year = today.getFullYear();
       return transactions.filter(t => {
         const d = new Date(t.date);
         return d.getFullYear() === year;
       });
     }
+    //fallback:return all transactions
     return transactions;
   };
+  //compute filtered transactions once per render
 
   const filteredTransactions = getFilteredTransactions();
+  //options for the segmented period selector UI
 
   const periods = [
     { value: 'week', label: 'Week' },
@@ -100,6 +111,7 @@ const InsightsScreen = ({ navigation }) => {
     const categoryData = {};
     
     filteredTransactions.forEach(transaction => {
+      //only count expenses for category breakdown 
       if (transaction.type === 'expense') {
         if (categoryData[transaction.category]) {
           categoryData[transaction.category] += transaction.amount;
@@ -108,6 +120,7 @@ const InsightsScreen = ({ navigation }) => {
         }
       }
     });
+    // turn grouped data into array format required by chart lib
 
     return Object.entries(categoryData)
       .map(([category, amount]) => ({
@@ -118,8 +131,9 @@ const InsightsScreen = ({ navigation }) => {
         legendFontSize: 12,
       }))
       .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
+      .slice(0, 5);//take top 5 categories  for display
   };
+  //return colour hex based on category name(used by charts)
 
   const getCategoryColor = (category) => {
     const colors = {
@@ -216,8 +230,10 @@ const InsightsScreen = ({ navigation }) => {
         ],
       };
     }
+    //default empty chart data
     return { labels: [], datasets: [] };
   };
+  //compute trend data for current selected period and filtered transactions
 
   const trendData = getTrendData(selectedPeriod, filteredTransactions);
 
@@ -250,6 +266,7 @@ const InsightsScreen = ({ navigation }) => {
     return Object.entries(sourceData)
       .map(([source, amount]) => ({
         name: source,
+        //ensure amount is finite before passing to chart
         amount: isFinite(amount) ? amount : 0, // ✅ Sanitize
         color: getSourceColor(source),
         legendFontColor: '#F9FAFB',
@@ -258,6 +275,7 @@ const InsightsScreen = ({ navigation }) => {
       .sort((a, b) => b.amount - a.amount);
 
   };
+  //colors for common sources
 
   const getSourceColor = (source) => {
     const colors = {
@@ -268,7 +286,7 @@ const InsightsScreen = ({ navigation }) => {
     };
     return colors[source] || '#94A3B8';
   };
-
+  //derived datasets for charts
   const categoryBreakdown = getCategoryBreakdown();
   const sourceBreakdown = getSourceBreakdown();
 
@@ -363,6 +381,7 @@ const InsightsScreen = ({ navigation }) => {
               </View>
             </>
           ) : (
+            //empty state when there are no expense categories to show
             <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
               <FileText color={theme.colors.textSubtle} size={48} style={{ marginBottom: 16 }} />
               <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.body, color: theme.colors.textSubtle, textAlign: 'center' }}>No valid trend data</Text>

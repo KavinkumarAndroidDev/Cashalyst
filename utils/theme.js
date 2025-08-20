@@ -2,7 +2,7 @@
 // Use this for all colors, fonts, spacing, radii, shadows, and reusable component styles
 
 import { responsiveFontSize, moderateScale } from './scale';
-
+//color palette for the app UI
 const colors = {
   background: '#0F172A',
   card: '#1E293B',
@@ -20,7 +20,7 @@ const colors = {
   shadow: 'rgba(0,0,0,0.08)',
   glass: 'rgba(30,41,59,0.8)',
 };
-
+//Font families,sizes,weights and line heights
 const font = {
   family: {
     regular: 'Inter_400Regular',
@@ -56,7 +56,7 @@ const font = {
     largeLabel: moderateScale(24),
   },
 };
-
+//spacing system for consistent margins, paddings, and gaps
 const spacing = {
   xs: moderateScale(4),
   sm: moderateScale(8),
@@ -64,13 +64,13 @@ const spacing = {
   lg: moderateScale(24),
   xl: moderateScale(32),
 };
-
+//border radii for consistent corner rounding
 const radii = {
   card: 16,
   button: 8,
   input: 12,
 };
-
+//shadow styles for depth and elevation effects
 const shadow = {
   card: {
     shadowColor: colors.shadow,
@@ -101,7 +101,7 @@ const input = {
   paddingHorizontal: spacing.md,
   marginBottom: spacing.md,
 };
-
+//button styles for different variants
 const button = {
   filled: {
     backgroundColor: colors.accent,
@@ -150,7 +150,7 @@ const button = {
     fontSize: font.size.label,
   },
 };
-
+//card style for containers and surfaces 
 const card = {
   backgroundColor: colors.card,
   borderRadius: radii.card,
@@ -158,12 +158,12 @@ const card = {
   marginBottom: spacing.md,
   ...shadow.card,
 };
-
+//icon default styles
 const icon = {
   size: moderateScale(22),
   color: colors.textMain,
 };
-
+//export the theme object 
 export default {
   colors,
   font,

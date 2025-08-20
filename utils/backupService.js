@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-
+// Importing the necessary libraries for file operations and document picking
 class BackupService {
   constructor() {
     this.backupKey = 'cashalyst_backup';
@@ -344,6 +344,7 @@ class BackupService {
         throw new Error('Backup file not found');
       }
 
+      // Check if sharing is available before sharing
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(filePath, {
           mimeType: 'application/json',
@@ -416,4 +417,4 @@ class BackupService {
   }
 }
 
-export default new BackupService(); 
+export default new BackupService();

@@ -3,6 +3,7 @@ import db from './initDB';
 // Transaction operations
 export const addTransaction = (transaction) => {
   return new Promise((resolve, reject) => {
+    // Destructure transaction object for database insertion
     const { id, amount, type, category, source, sourceId, note, date } = transaction;
     
     db.transaction(
@@ -14,7 +15,7 @@ export const addTransaction = (transaction) => {
           [id, amount, type, category, source, sourceId, note, date]
         );
 
-        // Update account balance
+        // Update account balance based on transaction type
         const balanceChange = type === 'income' ? amount : -amount;
         tx.executeSql(
           `UPDATE accounts SET balance = balance + ? WHERE id = ?`,
@@ -35,10 +36,12 @@ export const addTransaction = (transaction) => {
 
 export const getTransactions = (filters = {}) => {
   return new Promise((resolve, reject) => {
+    // Start with base query to get all transactions
     let query = 'SELECT * FROM transactions';
     let params = [];
     let conditions = [];
 
+    // Add filters based on provided criteria
     if (filters.type) {
       conditions.push('type = ?');
       params.push(filters.type);
@@ -49,6 +52,7 @@ export const getTransactions = (filters = {}) => {
       params.push(filters.category);
     }
 
+    // Filter by account (prefer sourceId, fallback to source name for legacy)
     if (filters.sourceId) {
       conditions.push('sourceId = ?');
       params.push(filters.sourceId);
@@ -57,6 +61,7 @@ export const getTransactions = (filters = {}) => {
       params.push(filters.source);
     }
 
+    // Add date range filters
     if (filters.startDate) {
       conditions.push('date >= ?');
       params.push(filters.startDate);
@@ -67,10 +72,12 @@ export const getTransactions = (filters = {}) => {
       params.push(filters.endDate);
     }
 
+    // Combine all conditions with AND
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
 
+    // Order by date (newest first)
     query += ' ORDER BY date DESC';
 
     db.transaction(
@@ -91,16 +98,17 @@ export const deleteTransaction = (id) => {
   return new Promise((resolve, reject) => {
     db.transaction(
       (tx) => {
-        // First get the transaction to update account balance
+        // First get the transaction details to update account balance
         tx.executeSql(
           'SELECT amount, type, source, sourceId FROM transactions WHERE id = ?',
           [id],
           (_, { rows }) => {
             if (rows.length > 0) {
               const transaction = rows._array[0];
+              // Reverse the transaction effect on account balance
               const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
               
-              // Update account balance
+              // Update account balance by reversing the transaction
               tx.executeSql(
                 'UPDATE accounts SET balance = balance + ? WHERE id = ?',
                 [balanceChange, transaction.sourceId || transaction.source]
@@ -109,7 +117,7 @@ export const deleteTransaction = (id) => {
           }
         );
 
-        // Delete the transaction
+        // Delete the transaction from database
         tx.executeSql('DELETE FROM transactions WHERE id = ?', [id]);
       },
       (error) => {
@@ -129,6 +137,7 @@ export const getAccounts = () => {
   return new Promise((resolve, reject) => {
     db.transaction(
       (tx) => {
+        // Get all accounts ordered by name
         tx.executeSql('SELECT * FROM accounts ORDER BY name', [], (_, { rows }) => {
           resolve(rows._array);
         });
@@ -143,10 +152,12 @@ export const getAccounts = () => {
 
 export const addAccount = (account) => {
   return new Promise((resolve, reject) => {
+    // Destructure account object with default balance
     const { id, name, balance = 0 } = account;
     
     db.transaction(
       (tx) => {
+        // Insert new account into database
         tx.executeSql(
           'INSERT INTO accounts (id, name, balance) VALUES (?, ?, ?)',
           [id, name, balance]
@@ -168,6 +179,7 @@ export const updateAccountBalance = (id, balance) => {
   return new Promise((resolve, reject) => {
     db.transaction(
       (tx) => {
+        // Update account balance in database
         tx.executeSql(
           'UPDATE accounts SET balance = ? WHERE id = ?',
           [balance, id]
@@ -188,12 +200,13 @@ export const updateAccountBalance = (id, balance) => {
 // Analytics operations
 export const getMonthlyStats = (year, month) => {
   return new Promise((resolve, reject) => {
+    // Create date range for the specified month
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
     const endDate = `${year}-${month.toString().padStart(2, '0')}-31`;
     
     db.transaction(
       (tx) => {
-        // Get income
+        // Get total income for the month
         tx.executeSql(
           `SELECT SUM(amount) as total FROM transactions 
            WHERE type = 'income' AND date >= ? AND date <= ?`,
@@ -201,13 +214,14 @@ export const getMonthlyStats = (year, month) => {
           (_, { rows }) => {
             const income = rows._array[0]?.total || 0;
             
-            // Get expenses
+            // Get total expenses for the month
             tx.executeSql(
               `SELECT SUM(amount) as total FROM transactions 
                WHERE type = 'expense' AND date >= ? AND date <= ?`,
               [startDate, endDate],
               (_, { rows }) => {
                 const expenses = rows._array[0]?.total || 0;
+                // Return monthly statistics
                 resolve({
                   income,
                   expenses,
@@ -228,11 +242,13 @@ export const getMonthlyStats = (year, month) => {
 
 export const getCategoryStats = (year, month) => {
   return new Promise((resolve, reject) => {
+    // Create date range for the specified month
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
     const endDate = `${year}-${month.toString().padStart(2, '0')}-31`;
     
     db.transaction(
       (tx) => {
+        // Get expense statistics grouped by category for the month
         tx.executeSql(
           `SELECT category, SUM(amount) as total FROM transactions 
            WHERE type = 'expense' AND date >= ? AND date <= ?
@@ -256,9 +272,13 @@ export const migrateTransactionsAddSourceId = () => {
   return new Promise((resolve, reject) => {
     db.transaction(
       (tx) => {
+        // Find transactions that don't have sourceId set
         tx.executeSql('SELECT id, source FROM transactions WHERE sourceId IS NULL OR sourceId = ""', [], (_, { rows }) => {
           if (rows.length === 0) return resolve();
+          
+          // Get all accounts to map source names to IDs
           tx.executeSql('SELECT id, name FROM accounts', [], (_, { rows: accRows }) => {
+            // Update each transaction with the corresponding account ID
             for (let i = 0; i < rows.length; i++) {
               const txn = rows.item(i);
               const acc = accRows._array.find(a => a.name === txn.source);

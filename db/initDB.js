@@ -1,12 +1,13 @@
 import * as SQLite from 'expo-sqlite';
 
+// Open SQLite database for the app
 const db = SQLite.openDatabase('cashalyst.db');
 
 export const initDatabase = () => {
   return new Promise((resolve, reject) => {
     db.transaction(
       (tx) => {
-        // Create transactions table
+        // Create transactions table with all necessary fields
         tx.executeSql(
           `CREATE TABLE IF NOT EXISTS transactions (
             id TEXT PRIMARY KEY,
@@ -20,7 +21,8 @@ export const initDatabase = () => {
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
           );`
         );
-        // Migration: add sourceId column if not present
+        
+        // Migration: add sourceId column if not present for backward compatibility
         tx.executeSql(
           `PRAGMA table_info(transactions);`,
           [],
@@ -32,7 +34,7 @@ export const initDatabase = () => {
           }
         );
 
-        // Create accounts table
+        // Create accounts table for storing financial accounts
         tx.executeSql(
           `CREATE TABLE IF NOT EXISTS accounts (
             id TEXT PRIMARY KEY,
@@ -42,7 +44,7 @@ export const initDatabase = () => {
           );`
         );
 
-        // Insert default accounts if they don't exist
+        // Insert default accounts if they don't exist (Cash, GPay, Bank)
         tx.executeSql(
           `INSERT OR IGNORE INTO accounts (id, name, balance) VALUES 
            ('cash', 'Cash', 0),

@@ -9,15 +9,18 @@ const AppSearchBar = ({ onSearch, placeholder = 'Search transactions...', style 
   const inputRef = useRef();
   const [inputValue, setInputValue] = useState('');
 
+  // Handle text input changes
   const handleChange = (text) => {
     setInputValue(text);
   };
 
+  // Handle search submission
   const handleSubmit = () => {
     onSearch && onSearch(inputValue);
     Keyboard.dismiss();
   };
 
+  // Clear search input and reset
   const handleClear = () => {
     setInputValue('');
     onSearch && onSearch('');
@@ -40,6 +43,7 @@ const AppSearchBar = ({ onSearch, placeholder = 'Search transactions...', style 
         autoCorrect={false}
         autoCapitalize="none"
       />
+      {/* Clear button - only show when there's input */}
       {inputValue ? (
         <TouchableOpacity onPress={handleClear} style={styles.clearBtn}>
           <X color={theme.colors.textSubtle} size={18} />

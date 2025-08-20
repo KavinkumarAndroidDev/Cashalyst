@@ -17,6 +17,7 @@ import { Linking } from 'react-native';
 import Constants from 'expo-constants';
 
 const SettingsScreen = ({ navigation }) => {
+  //state variables for backup,notifications,UI , and user info
   const [hasBackup, setHasBackup] = useState(false);
   const [backupInfo, setBackupInfo] = useState(null);
   const [backupLocation, setBackupLocation] = useState(null);
@@ -35,9 +36,9 @@ const SettingsScreen = ({ navigation }) => {
   const [showEditName, setShowEditName] = useState(false);
   const [editName, setEditName] = useState('');
   const [editNameError, setEditNameError] = useState('');
-
+  //app global store(accounts,transactions and loaders)
   const { accounts, transactions, loadAccounts, loadTransactions } = useStore();
-
+  //on mount:check notifications ,backup and load username
   useEffect(() => {
     checkNotificationStatus();
     checkBackupStatus();
@@ -46,11 +47,11 @@ const SettingsScreen = ({ navigation }) => {
       if (saved) setUsername(saved);
     })();
   }, []);
-
+  //check current notification permission and stats 
   const checkNotificationStatus = async () => {
     try {
-      const status = await notificationService.checkPermissionStatus();
-      const stats = await notificationService.getNotificationStats();
+      const status = await notificationService.checkPermissionStatus();//permission status 
+      const stats = await notificationService.getNotificationStats();//pending notifications
       
       console.log('Notification status check:', { status, stats });
       
@@ -69,7 +70,7 @@ const SettingsScreen = ({ navigation }) => {
       setNotificationStats(null);
     }
   };
-
+  //check backup presence and metadata
   const checkBackupStatus = async () => {
     try {
       const hasBackupData = await backupService.hasBackup();
@@ -93,6 +94,7 @@ const SettingsScreen = ({ navigation }) => {
     }
   };
 
+  //create backup in local storage
   const handleCreateBackup = async () => {
     setLoading(true);
     try {
@@ -107,7 +109,7 @@ const SettingsScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-
+  //share after creating backup
   const handleCreateAndShareBackup = async () => {
     setLoading(true);
     try {
@@ -127,7 +129,7 @@ const SettingsScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-
+  //restore backup from app storage
   const handleRestoreBackup = async () => {
     setLoading(true);
     try {
@@ -142,7 +144,7 @@ const SettingsScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-
+  //save backup to external storage 
   const handleCreateExternalBackup = async () => {
     setLoading(true);
     try {
@@ -157,7 +159,7 @@ const SettingsScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-
+  //share backup by creating and saving it temporarily 
   const handleShareBackup = async () => {
     setLoading(true);
     try {
@@ -187,7 +189,7 @@ const SettingsScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-
+  //restore backup from user selected file
   const handleRestoreFromExternalFile = async () => {
     setLoading(true);
     try {
@@ -202,7 +204,7 @@ const SettingsScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-
+  //show configuration modal before clearing all data 
   const handleClearData = () => {
     setShowConfirmModal(true);
   };
@@ -231,7 +233,7 @@ const SettingsScreen = ({ navigation }) => {
       setShowConfirmModal(false);
     }
   };
-
+  // toggle smart notifications on/off
   const handleToggleNotifications = async () => {
     try {
       if (notificationsEnabled) {
@@ -269,7 +271,7 @@ const SettingsScreen = ({ navigation }) => {
       setTimeout(() => checkNotificationStatus(), 2000);
     }
   };
-
+  //export data as json file
   const handleExportData = async () => {
     setLoading(true);
     try {
@@ -283,7 +285,7 @@ const SettingsScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-
+  //component for each setting item row
   const SettingItem = ({ icon: Icon, title, subtitle, onPress, loading = false, danger = false }) => (
     <TouchableOpacity
       style={{
@@ -334,7 +336,7 @@ const SettingsScreen = ({ navigation }) => {
       {loading && <ActivityIndicator size="small" color={theme.colors.accent} />}
     </TouchableOpacity>
   );
-
+  // UI rendering
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top', 'bottom']}>
       <StatusBar barStyle="light-content" />
@@ -352,7 +354,7 @@ const SettingsScreen = ({ navigation }) => {
           <View style={{ width: 40 }} />
         </View>
       </View>
-
+      {/*scrollable list of setting items */}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         
         {/* Profile section at the top of the scroll */}

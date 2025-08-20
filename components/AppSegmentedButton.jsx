@@ -18,6 +18,7 @@ const AppSegmentedButton = ({
       borderWidth: 1,
       borderColor: theme.colors.border,
     }, style]}>
+      {/* Render each segment as a button */}
       {items.map((item, idx) => {
         const isSelected = idx === selectedIndex;
         return (
@@ -35,6 +36,7 @@ const AppSegmentedButton = ({
             activeOpacity={0.85}
             onPress={() => onSelect(idx)}
           >
+            {/* Optional icon for each segment */}
             {item.icon ? item.icon : null}
             <Text style={{
               color: isSelected ? theme.colors.textMain : theme.colors.textSubtle,
