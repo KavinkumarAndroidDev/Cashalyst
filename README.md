@@ -1,4 +1,4 @@
-# Cashalyst - Personal Finance Tracker
+# Cashalyst - Personal Finance Tracker 
 
 A simple yet powerful personal finance tracking app built with React Native and Expo. Perfect for students and early-career individuals who want to track daily expenses and income with clear insights.
 
