@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     color: theme.colors.textMain,
-    fontFamily: theme.font.family.medium,
+    fontFamily: theme.font?.family?.medium || 'System',
     fontSize: theme.font.size.label,
   },
   chevronWrap: {
@@ -199,12 +199,12 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     color: theme.colors.textSubtle,
-    fontFamily: theme.font.family.medium,
+    fontFamily: theme.font?.family?.medium || 'System',
     fontSize: theme.font.size.label,
   },
   dropdownItemTextSelected: {
     color: theme.colors.textMain,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
   },
 });
 

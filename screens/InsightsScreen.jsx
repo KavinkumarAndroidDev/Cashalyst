@@ -14,6 +14,7 @@ import useStore from '../hooks/useStore';
 import { formatCurrency } from '../utils/formatCurrency';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
+import { isThemeReady } from '../utils/themeHelpers';
 import {
   ArrowLeft,
   TrendingUp,
@@ -52,6 +53,15 @@ const CATEGORY_ICONS = {
 };
 
 const InsightsScreen = ({ navigation }) => {
+  // Early return with loading state if theme is not ready
+  if (!isThemeReady()) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#fff', fontSize: 16, fontFamily: 'System' }}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
+  
   //pull transactions and accounts from global store(custom hook)
   const { transactions, accounts } = useStore();
   //selectedPeriod determines whether we show week/month/year views
@@ -312,37 +322,37 @@ const InsightsScreen = ({ navigation }) => {
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
           </AppButton>
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Financial Insights</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Financial Insights</Text>
           <View style={{ width: 40 }} />
         </View>
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {/* Period Selector */}
-        <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Time Period</Text>
+        <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Time Period</Text>
         <Surface style={theme.card}>
           <AppSegmentedButton items={periods.map(p=>p.label)} selectedIndex={periods.findIndex(p=>p.value===selectedPeriod)} onSelect={(index)=>setSelectedPeriod(periods[index].value)} />
         </Surface>
         {/* Summary Cards */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Overview ({periods.find(p=>p.value===selectedPeriod).label})</Text>
+        <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Overview ({periods.find(p=>p.value===selectedPeriod).label})</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
           <Surface style={[theme.card, { flex: 1, alignItems: 'center', padding: theme.spacing.md  }]}>
             <TrendingUp color={theme.colors.accent} size={18} style={{ marginBottom: 4 }} />
-            <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.income)}</Text>
-            <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Income</Text>
+            <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.income)}</Text>
+            <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Income</Text>
           </Surface>
           <Surface style={[theme.card, { flex: 1, alignItems: 'center', padding: theme.spacing.md  }]}> 
             <TrendingDown color={theme.colors.error} size={18} style={{ marginBottom: 4 }} />
-            <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.expense)}</Text>
-            <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Expenses</Text>
+            <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.expense)}</Text>
+            <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Expenses</Text>
           </Surface>
           <Surface style={[theme.card, { flex: 1, alignItems: 'center', padding: theme.spacing.md }]}> 
             <PiggyBank color={theme.colors.textSubtle} size={18} style={{ marginBottom: 4 }} />
-            <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.savings)}</Text>
-            <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Savings</Text>
+            <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{formatCurrency(overview.savings)}</Text>
+            <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.note, color: theme.colors.textSubtle }}>Savings</Text>
           </Surface>
         </View>
         {/* Trend Chart */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginBottom: 8 }}>{periods.find(p=>p.value===selectedPeriod).label} Trend</Text>
+        <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.label, color: theme.colors.textMain, marginBottom: 8 }}>{periods.find(p=>p.value===selectedPeriod).label} Trend</Text>
         <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}>
           {trendData.labels.length > 0 &&
             trendData.datasets.every(ds => isValidDataArray(ds.data)) ? (
@@ -372,11 +382,11 @@ const InsightsScreen = ({ navigation }) => {
               <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 4 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
                   <View style={{ width: 16, height: 4, borderRadius: 2, backgroundColor: 'rgba(16, 185, 129, 1)', marginRight: 6 }} />
-                  <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textMain }}>Income</Text>
+                  <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.caption, color: theme.colors.textMain }}>Income</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ width: 16, height: 4, borderRadius: 2, backgroundColor: 'rgba(239, 68, 68, 1)', marginRight: 6 }} />
-                  <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textMain }}>Expenses</Text>
+                  <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.caption, color: theme.colors.textMain }}>Expenses</Text>
                 </View>
               </View>
             </>
@@ -384,12 +394,12 @@ const InsightsScreen = ({ navigation }) => {
             //empty state when there are no expense categories to show
             <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
               <FileText color={theme.colors.textSubtle} size={48} style={{ marginBottom: 16 }} />
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.body, color: theme.colors.textSubtle, textAlign: 'center' }}>No valid trend data</Text>
+              <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.body, color: theme.colors.textSubtle, textAlign: 'center' }}>No valid trend data</Text>
             </View>
           )}
         </Surface>
         {/* Category Breakdown */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Expense by Category</Text>
+        <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Expense by Category</Text>
         <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}>
           {categoryBreakdown.length > 0 && isValidDataArray(categoryBreakdown.map(c => c.amount)) ? (
             <PieChart
@@ -407,12 +417,12 @@ const InsightsScreen = ({ navigation }) => {
           ) : (
             <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
               <FileText color={theme.colors.textSubtle} size={48} style={{ marginBottom: 16 }} />
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.body, color: theme.colors.textSubtle, textAlign: 'center' }}>No expense data yet</Text>
+              <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.body, color: theme.colors.textSubtle, textAlign: 'center' }}>No expense data yet</Text>
             </View>
           )}
         </Surface>
         {/* Source Breakdown */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Transactions by Source</Text>
+        <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Transactions by Source</Text>
         <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.md }]}>
           {sourceBreakdown.length > 0 && isValidDataArray(sourceBreakdown.map(s => s.amount)) ? (
             <BarChart
@@ -436,12 +446,12 @@ const InsightsScreen = ({ navigation }) => {
           ) : (
             <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
               <FileText color={theme.colors.textSubtle} size={48} style={{ marginBottom: 16 }} />
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.body, color: theme.colors.textSubtle, textAlign: 'center' }}>No transaction data yet</Text>
+              <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.body, color: theme.colors.textSubtle, textAlign: 'center' }}>No transaction data yet</Text>
             </View>
           )}
         </Surface>
         {/* Top Categories List */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Top Expense Categories</Text>
+        <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.label, color: theme.colors.textMain, marginTop: theme.spacing.md, marginBottom: 8 }}>Top Expense Categories</Text>
         {categoryBreakdown.length > 0 ? (
           categoryBreakdown.map((category, index) => (
             <Surface key={category.name} style={[theme.card, { flexDirection: 'row', alignItems: 'center', padding: theme.spacing.md, marginBottom: theme.spacing.md }]}> 
@@ -450,20 +460,20 @@ const InsightsScreen = ({ navigation }) => {
                   {renderCategoryIcon(category.name, category.color)}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{category.name}</Text>
-                  <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textSubtle }}>{formatCurrency(category.amount)}</Text>
+                  <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 2 }}>{category.name}</Text>
+                  <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.caption, color: theme.colors.textSubtle }}>{formatCurrency(category.amount)}</Text>
                 </View>
               </View>
               <View style={{ backgroundColor: theme.colors.card, paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radii.button, borderWidth: 1, borderColor: theme.colors.border }}>
-                <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.caption, color: theme.colors.textMain }}>#{index + 1}</Text>
+                <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.caption, color: theme.colors.textMain }}>#{index + 1}</Text>
               </View>
             </Surface>
           ))
         ) : (
           <Surface style={[theme.card, { alignItems: 'center', padding: theme.spacing.xl, marginBottom: theme.spacing.md }]}> 
             <FileText color={theme.colors.textSubtle} size={48} style={{ marginBottom: 16 }} />
-            <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 8 }}>No categories yet</Text>
-            <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.caption, color: theme.colors.textSubtle, textAlign: 'center' }}>
+            <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.body, color: theme.colors.textMain, marginBottom: 8 }}>No categories yet</Text>
+            <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.caption, color: theme.colors.textSubtle, textAlign: 'center' }}>
               Add some transactions to see your spending patterns
             </Text>
           </Surface>

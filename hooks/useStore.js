@@ -11,6 +11,7 @@ import {
   getCategoryStats
 } from '../db/asyncStorageService';
 import { generateId, getCurrentDate, getCurrentMonthYear } from '../utils/formatCurrency';
+import globalEvents, { EVENT_TYPES } from '../utils/globalEvents';
 
 const useStore = create((set, get) => ({
   // State - Core application data
@@ -327,7 +328,29 @@ const useStore = create((set, get) => ({
       set({ transactions: prevTransactions, accounts: prevAccounts, error: error.message, loading: false });
       throw error;
     }
-  }
+  },
+
+  // Global refresh function for complete state synchronization
+  refreshAllData: async () => {
+    set({ loading: true, error: null });
+    try {
+      // Reload all data from storage in parallel
+      await Promise.all([
+        get().loadTransactions(),
+        get().loadAccounts(), 
+        get().loadMonthlyStats(),
+        get().loadCategoryStats()
+      ]);
+      set({ loading: false });
+      
+      // Emit global event for successful data refresh
+      globalEvents.emit(EVENT_TYPES.DATA_RESTORED);
+      
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
 }));
 
-export default useStore; 
+export default useStore;

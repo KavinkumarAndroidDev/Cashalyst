@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppTextField from '../components/AppTextField';
 import { Linking } from 'react-native';
 import Constants from 'expo-constants';
+import globalEvents, { EVENT_TYPES } from '../utils/globalEvents';
 
 const SettingsScreen = ({ navigation }) => {
   //state variables for backup,notifications,UI , and user info
@@ -47,6 +48,23 @@ const SettingsScreen = ({ navigation }) => {
       if (saved) setUsername(saved);
     })();
   }, []);
+
+  // Listen for username changes and navigation focus
+  useEffect(() => {
+    const checkUsernameUpdate = async () => {
+      const currentUsername = await AsyncStorage.getItem('username');
+      if (currentUsername !== username) {
+        setUsername(currentUsername || '');
+      }
+    };
+
+    // Check on navigation focus
+    const unsubscribe = navigation.addListener('focus', checkUsernameUpdate);
+
+    return () => {
+      unsubscribe();
+    };
+  }, [username, navigation]);
   //check current notification permission and stats 
   const checkNotificationStatus = async () => {
     try {
@@ -134,6 +152,15 @@ const SettingsScreen = ({ navigation }) => {
     setLoading(true);
     try {
       await backupService.restoreBackup();
+      
+      // Refresh all data in Zustand store after restoration
+      if (typeof useStore.getState === 'function') {
+        await useStore.getState().refreshAllData();
+      }
+      
+      // Emit global event for data restoration
+      globalEvents.emit(EVENT_TYPES.DATA_RESTORED);
+      
       setSuccessMessage('Backup restored successfully');
       setShowSuccess(true);
       await checkBackupStatus();
@@ -194,6 +221,15 @@ const SettingsScreen = ({ navigation }) => {
     setLoading(true);
     try {
       const result = await backupService.restoreBackupFromExternalFile();
+      
+      // Refresh all data in Zustand store after restoration
+      if (typeof useStore.getState === 'function') {
+        await useStore.getState().refreshAllData();
+      }
+      
+      // Emit global event for data restoration
+      globalEvents.emit(EVENT_TYPES.DATA_RESTORED);
+      
       setSuccessMessage(result.message);
       setShowSuccess(true);
       await checkBackupStatus();
@@ -223,6 +259,9 @@ const SettingsScreen = ({ navigation }) => {
         categoryStats: []
       });
       
+      // Emit global event for data clearing
+      globalEvents.emit(EVENT_TYPES.DATA_CLEARED);
+      
       setSuccessMessage('All data cleared successfully');
       setShowSuccess(true);
     } catch (error) {
@@ -237,26 +276,28 @@ const SettingsScreen = ({ navigation }) => {
   const handleToggleNotifications = async () => {
     try {
       if (notificationsEnabled) {
-        // Disable notifications
-        await notificationService.cancelAllNotifications();
+        // Disable notifications - update UI immediately
         setNotificationsEnabled(false);
+        await notificationService.cancelAllNotifications();
         setSuccessMessage('Smart notifications turned off');
         setShowSuccess(true);
-        // Refresh status after disabling - longer delay to ensure cancellation
-        setTimeout(() => checkNotificationStatus(), 2000);
+        // Refresh status after disabling to ensure consistency
+        setTimeout(() => checkNotificationStatus(), 1000);
       } else {
         // Enable smart notifications
         const initialized = await notificationService.initialize();
         if (initialized) {
-          // Enable smart notifications
+          // Enable smart notifications - update UI immediately
+          setNotificationsEnabled(true);
           await notificationService.enableSmartNotifications();
           setSuccessMessage('Smart notifications turned on');
           setShowSuccess(true);
-          // Refresh status after enabling - longer delay to ensure scheduling
-          setTimeout(() => checkNotificationStatus(), 5000);
+          // Refresh status after enabling to ensure consistency
+          setTimeout(() => checkNotificationStatus(), 2000);
         } else {
           setErrorMessage('Please enable notifications in your device settings');
           setShowError(true);
+          // Keep UI state unchanged if initialization failed
         }
       }
     } catch (error) {
@@ -267,8 +308,8 @@ const SettingsScreen = ({ navigation }) => {
         setErrorMessage('Failed to update notification settings');
       }
       setShowError(true);
-      // Refresh status to show correct state
-      setTimeout(() => checkNotificationStatus(), 2000);
+      // Refresh status to show correct state and revert UI if needed
+      setTimeout(() => checkNotificationStatus(), 1000);
     }
   };
   //export data as json file
@@ -318,7 +359,7 @@ const SettingsScreen = ({ navigation }) => {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{
-          fontFamily: theme.font.family.bold,
+          fontFamily: theme.font?.family?.bold || 'System',
           fontSize: 16,
           color: theme.colors.textMain,
           marginBottom: 2,
@@ -326,7 +367,7 @@ const SettingsScreen = ({ navigation }) => {
           {title}
         </Text>
         <Text style={{
-          fontFamily: theme.font.family.medium,
+          fontFamily: theme.font?.family?.medium || 'System',
           fontSize: 14,
           color: theme.colors.textSubtle,
         }}>
@@ -350,7 +391,7 @@ const SettingsScreen = ({ navigation }) => {
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
           </AppButton>
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Settings</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Settings</Text>
           <View style={{ width: 40 }} />
         </View>
       </View>
@@ -364,12 +405,12 @@ const SettingsScreen = ({ navigation }) => {
             onPress={() => { setEditName(username); setShowEditName(true); }}
             activeOpacity={0.85}
           >
-            <Text style={{ color: theme.colors.buttonText || '#fff', fontFamily: theme.font.family.bold, fontSize: 28 }}>
+            <Text style={{ color: theme.colors.buttonText || '#fff', fontFamily: theme.font?.family?.bold || 'System', fontSize: 28 }}>
               {username ? username.trim().charAt(0).toUpperCase() : 'U'}
             </Text>
           </TouchableOpacity>
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 18, color: theme.colors.textMain }}>{username || 'Your Name'}</Text>
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: 13, color: theme.colors.textSubtle, marginTop: 2 }}>Tap to edit your name</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 18, color: theme.colors.textMain }}>{username || 'Your Name'}</Text>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: 13, color: theme.colors.textSubtle, marginTop: 2 }}>Tap to edit your name</Text>
         </View>
         <AppModal
           visible={showEditName}
@@ -386,6 +427,10 @@ const SettingsScreen = ({ navigation }) => {
               }
               await AsyncStorage.setItem('username', editName.trim());
               setUsername(editName.trim());
+              
+              // Emit global event for username change
+              globalEvents.emit(EVENT_TYPES.USERNAME_CHANGED, editName.trim());
+              
               setShowEditName(false);
               setEditNameError('');
             }}
@@ -400,7 +445,7 @@ const SettingsScreen = ({ navigation }) => {
             }}
             placeholder="Enter your name"
             style={{ backgroundColor: theme.colors.inputBackground || theme.colors.card, borderRadius: theme.radii.button, paddingHorizontal: 20, marginTop: 12, height: 48, minHeight: 48, maxHeight: 48 }}
-            inputStyle={{ color: theme.colors.textMain, fontFamily: theme.font.family.medium, fontSize: theme.font.size.label }}
+            inputStyle={{ color: theme.colors.textMain, fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label }}
             autoCapitalize="words"
             maxLength={24}
             editable={true}
@@ -410,7 +455,7 @@ const SettingsScreen = ({ navigation }) => {
         </AppModal>
 
         {/* Notifications Section */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: 18, color: theme.colors.textMain, marginBottom: 16, marginTop: 8 }}>Notifications</Text>
+        <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 18, color: theme.colors.textMain, marginBottom: 16, marginTop: 8 }}>Notifications</Text>
         
         <SettingItem
           icon={Bell}
@@ -432,7 +477,7 @@ const SettingsScreen = ({ navigation }) => {
             borderColor: 'rgba(16, 185, 129, 0.2)',
           }}>
             <Text style={{
-              fontFamily: theme.font.family.medium,
+              fontFamily: theme.font?.family?.medium || 'System',
               fontSize: 12,
               color: '#10B981',
               textAlign: 'center',
@@ -452,7 +497,7 @@ const SettingsScreen = ({ navigation }) => {
             borderColor: 'rgba(239, 68, 68, 0.2)',
           }}>
             <Text style={{
-              fontFamily: theme.font.family.medium,
+              fontFamily: theme.font?.family?.medium || 'System',
               fontSize: 12,
               color: '#EF4444',
               textAlign: 'center',
@@ -463,12 +508,12 @@ const SettingsScreen = ({ navigation }) => {
         )}
 
         {/* App Information Section */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: 18, color: theme.colors.textMain, marginBottom: 16, marginTop: 24 }}>App Information</Text>
+        <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 18, color: theme.colors.textMain, marginBottom: 16, marginTop: 24 }}>App Information</Text>
         
         <SettingItem
           icon={Info}
           title="Version"
-          subtitle={Constants.expoConfig?.version || "2.0.1"}
+          subtitle={Constants.expoConfig?.version || "2.2.0"}
           onPress={() => {}}
         />
 
@@ -480,7 +525,7 @@ const SettingsScreen = ({ navigation }) => {
         />
 
         {/* Developer Info Section */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: 18, color: theme.colors.textMain, marginBottom: 16, marginTop: 24 }}>Developer</Text>
+        <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 18, color: theme.colors.textMain, marginBottom: 16, marginTop: 24 }}>Developer</Text>
         
         <SettingItem
           icon={User}
@@ -503,7 +548,7 @@ const SettingsScreen = ({ navigation }) => {
 
         {/* Backup Section */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 24 }}>
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 18, color: theme.colors.textMain, marginRight: 6 }}>Backup & Data</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 18, color: theme.colors.textMain, marginRight: 6 }}>Backup & Data</Text>
           <TouchableOpacity onPress={() => setShowBackupInfo(true)}>
             <Info color={theme.colors.accent} size={18} />
           </TouchableOpacity>
@@ -572,7 +617,7 @@ const SettingsScreen = ({ navigation }) => {
             borderColor: 'rgba(59, 130, 246, 0.2)',
           }}>
             <Text style={{
-              fontFamily: theme.font.family.bold,
+              fontFamily: theme.font?.family?.bold || 'System',
               fontSize: 14,
               color: theme.colors.textMain,
               marginBottom: 8,
@@ -580,7 +625,7 @@ const SettingsScreen = ({ navigation }) => {
               App Backup Files
             </Text>
             <Text style={{
-              fontFamily: theme.font.family.medium,
+              fontFamily: theme.font?.family?.medium || 'System',
               fontSize: 12,
               color: theme.colors.textSubtle,
               marginBottom: 4,
@@ -588,7 +633,7 @@ const SettingsScreen = ({ navigation }) => {
               Location: {backupLocation?.readablePath || 'App Documents/backups/'}
             </Text>
             <Text style={{
-              fontFamily: theme.font.family.medium,
+              fontFamily: theme.font?.family?.medium || 'System',
               fontSize: 12,
               color: theme.colors.textSubtle,
               marginBottom: 4,
@@ -596,7 +641,7 @@ const SettingsScreen = ({ navigation }) => {
               Files: {backupStorageInfo.fileCount} • Size: {backupStorageInfo.totalSizeMB} MB
             </Text>
             <Text style={{
-              fontFamily: theme.font.family.medium,
+              fontFamily: theme.font?.family?.medium || 'System',
               fontSize: 12,
               color: theme.colors.textSubtle,
             }}>
@@ -615,7 +660,7 @@ const SettingsScreen = ({ navigation }) => {
             borderColor: 'rgba(16, 185, 129, 0.2)',
           }}>
             <Text style={{
-              fontFamily: theme.font.family.bold,
+              fontFamily: theme.font?.family?.bold || 'System',
               fontSize: 14,
               color: '#10B981',
               marginBottom: 8,
@@ -623,7 +668,7 @@ const SettingsScreen = ({ navigation }) => {
               App Backup Available
             </Text>
             <Text style={{
-              fontFamily: theme.font.family.medium,
+              fontFamily: theme.font?.family?.medium || 'System',
               fontSize: 12,
               color: '#10B981',
               marginBottom: 4,
@@ -631,7 +676,7 @@ const SettingsScreen = ({ navigation }) => {
               Last backup: {backupInfo ? new Date(backupInfo.timestamp).toLocaleDateString() : 'Unknown'}
             </Text>
             <Text style={{
-              fontFamily: theme.font.family.medium,
+              fontFamily: theme.font?.family?.medium || 'System',
               fontSize: 12,
               color: '#10B981',
             }}>
@@ -650,7 +695,7 @@ const SettingsScreen = ({ navigation }) => {
             borderColor: 'rgba(239, 68, 68, 0.2)',
           }}>
             <Text style={{
-              fontFamily: theme.font.family.bold,
+              fontFamily: theme.font?.family?.bold || 'System',
               fontSize: 14,
               color: '#EF4444',
               marginBottom: 8,
@@ -658,7 +703,7 @@ const SettingsScreen = ({ navigation }) => {
               No Backups Found
             </Text>
             <Text style={{
-              fontFamily: theme.font.family.medium,
+              fontFamily: theme.font?.family?.medium || 'System',
               fontSize: 12,
               color: '#EF4444',
               marginBottom: 4,
@@ -666,7 +711,7 @@ const SettingsScreen = ({ navigation }) => {
               Create a backup to protect your data
             </Text>
             <Text style={{
-              fontFamily: theme.font.family.medium,
+              fontFamily: theme.font?.family?.medium || 'System',
               fontSize: 12,
               color: '#EF4444',
             }}>
@@ -676,7 +721,7 @@ const SettingsScreen = ({ navigation }) => {
         )}
 
         {/* Danger Zone */}
-        <Text style={{ fontFamily: theme.font.family.bold, fontSize: 18, color: '#EF4444', marginBottom: 16, marginTop: 24 }}>Danger Zone</Text>
+        <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 18, color: '#EF4444', marginBottom: 16, marginTop: 24 }}>Danger Zone</Text>
         
         <SettingItem
           icon={Trash2}
@@ -695,7 +740,7 @@ const SettingsScreen = ({ navigation }) => {
         duration={3000}
         style={{ backgroundColor: '#10B981', marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
       >
-        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>{successMessage}</Text>
+        <Text style={{ color: '#fff', fontFamily: theme.font?.family?.medium || 'System', textAlign: 'center' }}>{successMessage}</Text>
       </Snackbar>
 
       {/* Error Snackbar */}
@@ -705,7 +750,7 @@ const SettingsScreen = ({ navigation }) => {
         duration={4000}
         style={{ backgroundColor: '#EF4444', marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
       >
-        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>{errorMessage}</Text>
+        <Text style={{ color: '#fff', fontFamily: theme.font?.family?.medium || 'System', textAlign: 'center' }}>{errorMessage}</Text>
       </Snackbar>
 
       {/* Confirmation Modal */}

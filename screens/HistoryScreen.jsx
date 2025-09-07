@@ -123,16 +123,17 @@ const HistoryScreen = ({ navigation }) => {
   // Calculate total amount for filtered transactions
   const getTotalAmount = () => {
     return filteredTransactions.reduce((total, transaction) => {
+      const amount = parseFloat(transaction.amount) || 0;
       if (transaction.type === 'income') {
-        return total + transaction.amount;
+        return total + amount;
       } else {
-        return total - transaction.amount;
+        return total - amount;
       }
     }, 0);
   };
 
-  const [animatedTotal] = useState(new Animated.Value(Math.abs(getTotalAmount()))); // Animated total for UI
-  const [lastTotal, setLastTotal] = useState(Math.abs(getTotalAmount())); // Last total for animation
+  const [animatedTotal] = useState(new Animated.Value(Math.abs(getTotalAmount()) || 0)); // Animated total for UI
+  const [lastTotal, setLastTotal] = useState(Math.abs(getTotalAmount()) || 0); // Last total for animation
   const [collapsedMonths, setCollapsedMonths] = useState({}); // Track collapsed month sections
   const [visibleCounts, setVisibleCounts] = useState({}); // Track visible transaction count per month
   const PAGE_SIZE = 20; // Pagination size for transactions
@@ -206,7 +207,7 @@ const HistoryScreen = ({ navigation }) => {
 
   // Animate total amount when filtered transactions change
   useEffect(() => {
-    const newTotal = Math.abs(getTotalAmount());
+    const newTotal = Math.abs(getTotalAmount()) || 0;
     Animated.timing(animatedTotal, {
       toValue: newTotal,
       duration: 400,
@@ -342,8 +343,9 @@ const HistoryScreen = ({ navigation }) => {
   const getIncomeExpenseTotals = () => {
     let income = 0, expense = 0;
     filteredTransactions.forEach(t => {
-      if (t.type === 'income') income += t.amount;
-      else if (t.type === 'expense') expense += t.amount;
+      const amount = parseFloat(t.amount) || 0;
+      if (t.type === 'income') income += amount;
+      else if (t.type === 'expense') expense += amount;
     });
     return { income, expense };
   };
@@ -441,16 +443,16 @@ const HistoryScreen = ({ navigation }) => {
       </View>
       {/* Snackbar is now at the root, not here */}
       <TouchableOpacity onPress={() => setShowSubtotals(v => !v)} activeOpacity={0.85} style={{ marginBottom: 8, alignItems: 'center' }}>
-        <Animated.Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: 17, letterSpacing: -0.2 }}>
-          {`Showing ${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''} · Total: ₹${Math.abs(getTotalAmount()).toLocaleString()}`}
+        <Animated.Text style={{ color: theme.colors.textMain, fontFamily: theme.font?.family?.bold || 'System', fontSize: 17, letterSpacing: -0.2 }}>
+          {`Showing ${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''} · Total: ₹${(Math.abs(getTotalAmount()) || 0).toLocaleString()}`}
         </Animated.Text>
         {showSubtotals && (
           <View style={{ flexDirection: 'row', marginTop: 4, gap: 16 }}>
             {(() => {
               const { income, expense } = getIncomeExpenseTotals();
               return <>
-                <Text style={{ color: '#10B981', fontFamily: theme.font.family.bold, fontSize: 14 }}>Income: ₹{income.toLocaleString()}</Text>
-                <Text style={{ color: '#EF4444', fontFamily: theme.font.family.bold, fontSize: 14 }}>Expense: ₹{expense.toLocaleString()}</Text>
+                <Text style={{ color: '#10B981', fontFamily: theme.font?.family?.bold || 'System', fontSize: 14 }}>Income: ₹{(income || 0).toLocaleString()}</Text>
+                <Text style={{ color: '#EF4444', fontFamily: theme.font?.family?.bold || 'System', fontSize: 14 }}>Expense: ₹{(expense || 0).toLocaleString()}</Text>
               </>;
             })()}
           </View>
@@ -472,7 +474,7 @@ const HistoryScreen = ({ navigation }) => {
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
           </AppButton>
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Transaction History</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Transaction History</Text>
           <View style={{ width: 40 }} />
         </View>
       </View>
@@ -484,7 +486,7 @@ const HistoryScreen = ({ navigation }) => {
         renderItem={({ item: section }) => (
           <View key={section.title} style={{ marginBottom: 24 }}>
             <TouchableOpacity onPress={() => toggleMonth(section.title)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 8 }}>
-              <Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: 16 }}>{new Date(section.title + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })}</Text>
+              <Text style={{ color: theme.colors.textMain, fontFamily: theme.font?.family?.bold || 'System', fontSize: 16 }}>{new Date(section.title + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })}</Text>
               <Text style={{ color: theme.colors.textSubtle, fontSize: 14 }}>{collapsedMonths[section.title] ? '▼' : '▲'}</Text>
             </TouchableOpacity>
             {!collapsedMonths[section.title] && section.data.map((transaction, index) => (
@@ -580,10 +582,33 @@ const HistoryScreen = ({ navigation }) => {
         <Snackbar
           visible={showFilterTip}
           onDismiss={() => setShowFilterTip(false)}
-          duration={2200}
-          style={{ backgroundColor: theme.colors.card, alignSelf: 'center', borderRadius: 16, minWidth: 180, maxWidth: 320, position: 'absolute', left: 0, right: 0, top: '40%', zIndex: 100 }}
+          duration={4000}
+          style={{ 
+            backgroundColor: theme.colors.accent, 
+            marginBottom: insets.bottom + 80, 
+            marginHorizontal: 16, 
+            borderRadius: 12,
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+          }}
+          action={{
+            label: 'Got it',
+            onPress: () => setShowFilterTip(false),
+            labelStyle: { color: '#fff', fontFamily: theme.font?.family?.bold || 'System' }
+          }}
         >
-          <Text style={{ color: theme.colors.accent, fontFamily: theme.font.family.medium, textAlign: 'center' }}>Tip: Filters are remembered. Use 'Reset' to clear.</Text>
+          <Text style={{ 
+            color: '#fff', 
+            fontFamily: theme.font?.family?.medium || 'System', 
+            textAlign: 'left',
+            fontSize: 14,
+            lineHeight: 20
+          }}>
+            💡 Pro tip: Use filters to find specific transactions. Your filter preferences are saved automatically!
+          </Text>
         </Snackbar>
         <Snackbar
           visible={showDeleteSuccess}
@@ -591,7 +616,7 @@ const HistoryScreen = ({ navigation }) => {
           duration={1800}
           style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
         >
-          <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction deleted successfully</Text>
+          <Text style={{ color: '#fff', fontFamily: theme.font?.family?.medium || 'System', textAlign: 'center' }}>Transaction deleted successfully</Text>
         </Snackbar>
         <Snackbar
           visible={showFilterReset}
@@ -599,7 +624,7 @@ const HistoryScreen = ({ navigation }) => {
           duration={1500}
           style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
         >
-          <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Filters reset successfully</Text>
+          <Text style={{ color: '#fff', fontFamily: theme.font?.family?.medium || 'System', textAlign: 'center' }}>Filters reset successfully</Text>
         </Snackbar>
 
         {/* Filter Modal */}
@@ -646,8 +671,8 @@ const HistoryScreen = ({ navigation }) => {
                       <SlidersHorizontal color={theme.colors.accent} size={20} />
                     </View>
                     <View>
-                      <Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: 18, fontWeight: '700' }}>Filters</Text>
-                      <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.regular, fontSize: 12, marginTop: 2 }}>Customize your transaction view</Text>
+                      <Text style={{ color: theme.colors.textMain, fontFamily: theme.font?.family?.bold || 'System', fontSize: 18, fontWeight: '700' }}>Filters</Text>
+                      <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font?.family?.regular || 'System', fontSize: 12, marginTop: 2 }}>Customize your transaction view</Text>
                     </View>
                   </View>
                   <TouchableOpacity onPress={() => setFilterModalVisible(false)} style={{ padding: 4 }}>
@@ -658,7 +683,7 @@ const HistoryScreen = ({ navigation }) => {
                 {/* Enhanced Content */}
                 <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24 }}>
                   {/* Type Chips Row */}
-                  <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 8 }}>Transaction Type</Text>
+                  <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font?.family?.medium || 'System', fontSize: 13, marginBottom: 8 }}>Transaction Type</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
                     {['all', 'income', 'expense'].map(type => (
                       <TouchableOpacity
@@ -678,7 +703,7 @@ const HistoryScreen = ({ navigation }) => {
                       >
                         <Text style={{ 
                           color: modalType === type ? theme.colors.accent : theme.colors.textMain, 
-                          fontFamily: theme.font.family.medium, 
+                          fontFamily: theme.font?.family?.medium || 'System', 
                           fontSize: 14, 
                           textAlign: 'center',
                           fontWeight: modalType === type ? '600' : '500'
@@ -690,7 +715,7 @@ const HistoryScreen = ({ navigation }) => {
                   </View>
                   
                   {/* Category Dropdown */}
-                  <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 8 }}>Category</Text>
+                  <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font?.family?.medium || 'System', fontSize: 13, marginBottom: 8 }}>Category</Text>
                   <View style={{ marginBottom: 20, width: '100%' }}>
                     <AppDropdown
                       items={[{ label: 'All Categories', value: 'all' }, ...getModalCategories().map(cat => ({ label: cat, value: cat }))]}
@@ -702,7 +727,7 @@ const HistoryScreen = ({ navigation }) => {
                   </View>
                   
                   {/* Source Dropdown */}
-                  <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 8 }}>Source</Text>
+                  <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font?.family?.medium || 'System', fontSize: 13, marginBottom: 8 }}>Source</Text>
                   <View style={{ marginBottom: 20, width: '100%' }}>
                     <AppDropdown
                       items={[{ label: 'All Sources', value: 'all' }, ...accounts.map((account) => ({ label: account.name, value: account.id }))]}
@@ -714,7 +739,7 @@ const HistoryScreen = ({ navigation }) => {
                   </View>
                   
                   {/* Date Range Row */}
-                  <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 13, marginBottom: 8 }}>Date Range</Text>
+                  <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font?.family?.medium || 'System', fontSize: 13, marginBottom: 8 }}>Date Range</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24, justifyContent: 'center' }}>
                     <TouchableOpacity 
                       onPress={() => { setShowModalDatePicker(true); setModalDatePickerMode('from'); }} 
@@ -732,7 +757,7 @@ const HistoryScreen = ({ navigation }) => {
                       }}
                     >
                       <Calendar color={theme.colors.textSubtle} size={18} />
-                      <Text style={{ color: theme.colors.textMain, marginLeft: 8, fontFamily: theme.font.family.medium, fontSize: 14 }}>
+                      <Text style={{ color: theme.colors.textMain, marginLeft: 8, fontFamily: theme.font?.family?.medium || 'System', fontSize: 14 }}>
                         {modalDateRange.from ? new Date(modalDateRange.from).toLocaleDateString() : 'From'}
                       </Text>
                     </TouchableOpacity>
@@ -752,7 +777,7 @@ const HistoryScreen = ({ navigation }) => {
                       }}
                     >
                       <Calendar color={theme.colors.textSubtle} size={18} />
-                      <Text style={{ color: theme.colors.textMain, marginLeft: 8, fontFamily: theme.font.family.medium, fontSize: 14 }}>
+                      <Text style={{ color: theme.colors.textMain, marginLeft: 8, fontFamily: theme.font?.family?.medium || 'System', fontSize: 14 }}>
                         {modalDateRange.to ? new Date(modalDateRange.to).toLocaleDateString() : 'To'}
                       </Text>
                     </TouchableOpacity>
@@ -790,7 +815,7 @@ const HistoryScreen = ({ navigation }) => {
                       }} 
                       onPress={applyModalFilters}
                     >
-                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15, textAlign: 'center', fontFamily: theme.font.family.medium }}>Apply Filters</Text>
+                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15, textAlign: 'center', fontFamily: theme.font?.family?.medium || 'System' }}>Apply Filters</Text>
                     </TouchableOpacity>
                     <TouchableOpacity 
                       style={{ 
@@ -809,7 +834,7 @@ const HistoryScreen = ({ navigation }) => {
                         setShowFilterReset(true);
                       }}
                     >
-                      <Text style={{ color: theme.colors.accent, fontWeight: '700', fontSize: 15, textAlign: 'center', fontFamily: theme.font.family.medium }}>Reset</Text>
+                      <Text style={{ color: theme.colors.accent, fontWeight: '700', fontSize: 15, textAlign: 'center', fontFamily: theme.font?.family?.medium || 'System' }}>Reset</Text>
                     </TouchableOpacity>
     </View>
                 </View>
@@ -917,7 +942,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   searchInput: {
-    fontFamily: theme.font.family.regular,
+    fontFamily: theme.font?.family?.regular || 'System',
     fontSize: theme.font.size.body,
     color: theme.colors.textMain,
   },

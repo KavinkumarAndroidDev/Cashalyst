@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     color: theme.colors.accent,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     fontSize: theme.font.size.title + 6, // slightly larger
     letterSpacing: 1.5,
     textAlign: 'center',
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   quoteText: {
     color: theme.colors.textMain,
-    fontFamily: theme.font.family.medium,
+    fontFamily: theme.font?.family?.medium || 'System',
     fontSize: theme.font.size.label,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   },
   quoteAuthor: {
     color: theme.colors.textSubtle,
-    fontFamily: theme.font.family.medium,
+    fontFamily: theme.font?.family?.medium || 'System',
     fontSize: theme.font.size.note,
     marginTop: 4,
     textAlign: 'center',

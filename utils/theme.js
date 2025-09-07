@@ -163,6 +163,29 @@ const icon = {
   size: moderateScale(22),
   color: colors.textMain,
 };
+
+// Stable TextInput theme for React Native Paper
+const textInputTheme = {
+  colors: {
+    background: colors.input,
+    text: colors.textMain,
+    placeholder: colors.textSubtle,
+    primary: colors.accent,
+    error: colors.error,
+    onSurface: colors.textMain,
+    onSurfaceVariant: colors.textSubtle,
+    outline: colors.border,
+    outlineVariant: colors.border,
+    surface: colors.input,
+    surfaceVariant: colors.card,
+  },
+  roundness: radii.input,
+  fonts: {
+    regular: { fontFamily: font.family.regular },
+    medium: { fontFamily: font.family.medium },
+  },
+};
+
 //export the theme object 
 export default {
   colors,
@@ -174,4 +197,5 @@ export default {
   button,
   card,
   icon,
+  textInputTheme,
 }; 

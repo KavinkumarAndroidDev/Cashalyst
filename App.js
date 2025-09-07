@@ -11,6 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initDatabase } from './db/asyncStorageService';
 import { moderateScale, responsiveFontSize } from './utils/scale';
 import SplashScreen from './components/SplashScreen';
+import WelcomeScreen from './screens/WelcomeScreen';
+import ProgressiveSetupScreen from './screens/ProgressiveSetupScreen';
 import SetupScreen from './screens/SetupScreen';
 import HomeScreen from './screens/HomeScreen';
 import AddTransactionScreen from './screens/AddTransactionScreen';
@@ -189,6 +191,10 @@ export default function App() {
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             {!isSetupComplete ? (
               <>
+                <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                <Stack.Screen name="ProgressiveSetup">
+                  {(props) => <ProgressiveSetupScreen {...props} onSetupComplete={() => setIsSetupComplete(true)} />}
+                </Stack.Screen>
                 <Stack.Screen name="Setup">
                   {(props) => <SetupScreen {...props} onSetupComplete={() => setIsSetupComplete(true)} />}
                 </Stack.Screen>

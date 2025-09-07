@@ -240,14 +240,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     color: theme.colors.textMain,
     marginBottom: 8,
     textAlign: 'center',
   },
   message: {
     fontSize: 14,
-    fontFamily: theme.font.family.regular,
+    fontFamily: theme.font?.family?.regular || 'System',
     color: theme.colors.textSubtle,
     lineHeight: 20,
     textAlign: 'center',
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontFamily: theme.font.family.medium,
+    fontFamily: theme.font?.family?.medium || 'System',
     fontWeight: '600',
   },
 });

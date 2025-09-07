@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: theme.colors.textMain,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     fontSize: 16,
     fontWeight: '700',
     backgroundColor: 'transparent',

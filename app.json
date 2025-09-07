@@ -2,7 +2,7 @@
   "expo": {
     "name": "Cashalyst",
     "slug": "Cashalyst",
-    "version": "2.1.0", 
+    "version": "2.2.0", 
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -22,7 +22,7 @@
       "android": {
     "edgeToEdgeEnabled": true,
     "package": "com.kkdev.cashalyst",
-    "versionCode": 3,
+    "versionCode": 4,
     "permissions": [
       "android.permission.VIBRATE",
       "android.permission.POST_NOTIFICATIONS",

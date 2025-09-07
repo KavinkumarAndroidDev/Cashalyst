@@ -22,6 +22,8 @@ import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import notificationService from '../utils/notificationService';
+import globalEvents, { EVENT_TYPES } from '../utils/globalEvents';
+import { isThemeReady } from '../utils/themeHelpers';
 
 const { width } = Dimensions.get('window');
 
@@ -56,6 +58,14 @@ const getCategoryColor = (category) => {
 };
 
 const HomeScreen = ({ navigation }) => {
+  // Early return with loading state if theme is not ready
+  if (!isThemeReady()) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#fff', fontSize: 16, fontFamily: 'System' }}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
   // Get account data, transactions, and statistics from Zustand store
   const { accounts, transactions, getStats } = useStore();
   
@@ -107,6 +117,41 @@ const HomeScreen = ({ navigation }) => {
     })();
   }, []);
 
+  // Listen for username changes (e.g., from settings screen)
+  useEffect(() => {
+    const checkUsernameUpdate = async () => {
+      const currentUsername = await AsyncStorage.getItem('username');
+      if (currentUsername !== username) {
+        setUsername(currentUsername || '');
+      }
+    };
+
+    // Set up interval to check for username changes
+    const interval = setInterval(checkUsernameUpdate, 1000);
+    
+    // Also listen for app focus events
+    const unsubscribe = navigation.addListener('focus', checkUsernameUpdate);
+
+    // Listen for global username change events
+    const unsubscribeGlobalEvent = globalEvents.on(EVENT_TYPES.USERNAME_CHANGED, (newUsername) => {
+      setUsername(newUsername || '');
+    });
+
+    // Listen for data restoration events to refresh display
+    const unsubscribeDataEvent = globalEvents.on(EVENT_TYPES.DATA_RESTORED, () => {
+      // Force refresh of stats when data is restored
+      const refreshedStats = getStats();
+      setStats(refreshedStats);
+    });
+
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+      unsubscribeGlobalEvent();
+      unsubscribeDataEvent();
+    };
+  }, [username, navigation]);
+
   // Get recent transactions sorted by date (most recent first, limit to 5)
   const recentTransactions = transactions
     .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date descending
@@ -151,7 +196,7 @@ const HomeScreen = ({ navigation }) => {
                 activeOpacity={0.8}
                 onPress={() => navigation.navigate('Settings')} // Navigate to settings
               >
-                <Text style={{ color: theme.colors.buttonText || '#fff', fontFamily: theme.font.family.bold, fontSize: 18 }}>
+                <Text style={{ color: theme.colors.buttonText || '#fff', fontFamily: theme.font?.family?.bold || 'System', fontSize: 18 }}>
                   {username.trim().charAt(0).toUpperCase()} {/* Show user's first initial */}
                 </Text>
               </TouchableOpacity>
@@ -339,11 +384,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: theme.colors.textSubtle,
     marginBottom: 4,
-    fontFamily: theme.font.family.medium,
+    fontFamily: theme.font?.family?.medium || 'System',
   },
   headerTitle: {
     fontSize: 28,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     color: theme.colors.textMain,
     letterSpacing: -0.5,
   },
@@ -358,7 +403,7 @@ const styles = StyleSheet.create({
   accountsButtonText: {
     color: theme.colors.textMain,
     fontSize: 14,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
   },
   scrollView: {
     flex: 1,
@@ -390,12 +435,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSubtle,
     marginBottom: 8,
-    fontFamily: theme.font.family.medium,
+    fontFamily: theme.font?.family?.medium || 'System',
     letterSpacing: 0.2,
   },
   balanceAmount: {
     fontSize: 32,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     color: theme.colors.textMain,
     marginBottom: 8,
     letterSpacing: -0.5,
@@ -411,14 +456,14 @@ const styles = StyleSheet.create({
   trendText: {
     color: '#10B981',
     fontSize: 12,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
   },
   overviewSection: {
     marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     color: theme.colors.textMain,
     marginBottom: 16,
     letterSpacing: -0.3,
@@ -450,7 +495,7 @@ const styles = StyleSheet.create({
   },
   overviewAmount: {
     fontSize: 16,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     color: theme.colors.textMain,
     marginBottom: 4,
     letterSpacing: 0.2,
@@ -458,7 +503,7 @@ const styles = StyleSheet.create({
   overviewLabel: {
     fontSize: 12,
     color: theme.colors.textSubtle,
-    fontFamily: theme.font.family.medium,
+    fontFamily: theme.font?.family?.medium || 'System',
     letterSpacing: 0.2,
   },
   actionsSection: {
@@ -494,7 +539,7 @@ const styles = StyleSheet.create({
   actionText: {
     color: theme.colors.textMain,
     fontSize: 14,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     textAlign: 'center',
     letterSpacing: 0.2,
   },
@@ -510,7 +555,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     color: theme.colors.accent,
     fontSize: 14,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     letterSpacing: 0.2,
   },
   emptyCard: {
@@ -532,7 +577,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     color: theme.colors.textMain,
     marginBottom: 8,
     letterSpacing: -0.3,
@@ -540,7 +585,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: theme.colors.textSubtle,
-    fontFamily: theme.font.family.medium,
+    fontFamily: theme.font?.family?.medium || 'System',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -556,7 +601,7 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     color: theme.colors.buttonText || '#fff',
     fontSize: 14,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     letterSpacing: 0.2,
   },
   transactionCard: {
@@ -591,7 +636,7 @@ const styles = StyleSheet.create({
   },
   transactionTitle: {
     fontSize: 15,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     color: theme.colors.textMain,
     marginBottom: 4,
     letterSpacing: -0.2,
@@ -611,7 +656,7 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontSize: 15,
-    fontFamily: theme.font.family.bold,
+    fontFamily: theme.font?.family?.bold || 'System',
     letterSpacing: -0.2,
   },
   fab: {

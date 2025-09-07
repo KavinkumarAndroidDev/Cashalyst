@@ -161,14 +161,14 @@ const EditTransactionScreen = ({ navigation, route }) => {
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
           </AppButton>
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Edit Transaction</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Edit Transaction</Text>
           <View style={{ width: 40 }} /> {/* Spacer for balanced layout */}
         </View>
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <Surface style={{ borderRadius: theme.radii.card, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, padding: theme.spacing.lg, marginBottom: theme.spacing.xl }}>
           {/* Transaction Type Selection */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Transaction type</Text>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Transaction type</Text>
           <View style={{ flexDirection: 'row', marginBottom: 24 }}>
             {transactionTypes.map(type => {
               const Icon = type.icon; // Get icon component for this type
@@ -192,15 +192,15 @@ const EditTransactionScreen = ({ navigation, route }) => {
                   activeOpacity={0.85}
                 >
                   <Icon color={isActive ? theme.colors.textMain : theme.colors.textSubtle} size={20} style={{ marginRight: 8 }} />
-                  <Text style={{ color: isActive ? theme.colors.textMain : theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: theme.font.size.label }}>{type.label}</Text>
+                  <Text style={{ color: isActive ? theme.colors.textMain : theme.colors.textSubtle, fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label }}>{type.label}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
           {/* Amount Input with Currency Symbol */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Enter amount</Text>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Enter amount</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font.family.medium, fontSize: 20, marginRight: 8 }}>₹</Text>
+            <Text style={{ color: theme.colors.textSubtle, fontFamily: theme.font?.family?.medium || 'System', fontSize: 20, marginRight: 8 }}>₹</Text>
             <AppTextField
               value={formData.amount}
               onChangeText={text => updateForm('amount', text)} // Update amount in form
@@ -210,7 +210,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
             />
           </View>
           {/* Transaction Title Input */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Title</Text>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Title</Text>
           <AppTextField
             value={formData.title}
             onChangeText={text => updateForm('title', text)} // Update title in form
@@ -218,7 +218,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
             placeholder="e.g., Coffee, Salary, Groceries"
           />
           {/* Category Dropdown Selection */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Category</Text>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Category</Text>
           <AppDropdown
             items={categories[formData.type].map(cat => ({ label: cat, value: cat }))} // Categories change based on transaction type
             selectedValue={formData.category}
@@ -227,7 +227,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
             style={{ marginBottom: 24 }}
           />
           {/* Account Source Selection */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Source</Text>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Source</Text>
           <AppDropdown
             items={accounts.map(account => ({ label: account.name, value: account.name }))} // Map accounts to dropdown items
             selectedValue={formData.source}
@@ -250,7 +250,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                 <Text style={{ 
-                  fontFamily: theme.font.family.bold, 
+                  fontFamily: theme.font?.family?.bold || 'System', 
                   fontSize: 16, 
                   color: theme.colors.textMain 
                 }}>
@@ -260,7 +260,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
               
               <View style={{ marginBottom: 8 }}>
                 <Text style={{ 
-                  fontFamily: theme.font.family.medium, 
+                  fontFamily: theme.font?.family?.medium || 'System', 
                   fontSize: 14, 
                   color: theme.colors.textSubtle, 
                   marginBottom: 4 
@@ -268,7 +268,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
                   {formData.source} balance will change by:
                 </Text>
                 <Text style={{ 
-                  fontFamily: theme.font.family.bold, 
+                  fontFamily: theme.font?.family?.bold || 'System', 
                   fontSize: 18, 
                   color: formData.type === 'income' ? '#10B981' : '#EF4444' // Green for income, red for expense
                 }}>
@@ -286,10 +286,10 @@ const EditTransactionScreen = ({ navigation, route }) => {
                   borderColor: 'rgba(239, 68, 68, 0.2)',
                   marginTop: 8
                 }}>
-                  <Text style={{ color: '#EF4444', fontFamily: theme.font.family.bold, fontSize: 14, marginBottom: 4 }}>
+                  <Text style={{ color: '#EF4444', fontFamily: theme.font?.family?.bold || 'System', fontSize: 14, marginBottom: 4 }}>
                     Insufficient Balance
                   </Text>
-                  <Text style={{ color: '#EF4444', fontFamily: theme.font.family.medium, fontSize: 13 }}>
+                  <Text style={{ color: '#EF4444', fontFamily: theme.font?.family?.medium || 'System', fontSize: 13 }}>
                     Available: {formatCurrency((accounts.find(acc => acc.name === formData.source)?.balance || 0) + (transaction.type === 'expense' ? transaction.amount : -transaction.amount))} • Shortfall: {formatCurrency(parseFloat(formData.amount) - ((accounts.find(acc => acc.name === formData.source)?.balance || 0) + (transaction.type === 'expense' ? transaction.amount : -transaction.amount)))}
                   </Text>
                 </View>
@@ -305,10 +305,10 @@ const EditTransactionScreen = ({ navigation, route }) => {
                   borderColor: 'rgba(16, 185, 129, 0.2)',
                   marginTop: 8
                 }}>
-                  <Text style={{ color: '#10B981', fontFamily: theme.font.family.bold, fontSize: 14, marginBottom: 4 }}>
+                  <Text style={{ color: '#10B981', fontFamily: theme.font?.family?.bold || 'System', fontSize: 14, marginBottom: 4 }}>
                     Sufficient Balance
                   </Text>
-                  <Text style={{ color: '#10B981', fontFamily: theme.font.family.medium, fontSize: 13 }}>
+                  <Text style={{ color: '#10B981', fontFamily: theme.font?.family?.medium || 'System', fontSize: 13 }}>
                     Remaining: {formatCurrency(((accounts.find(acc => acc.name === formData.source)?.balance || 0) + (transaction.type === 'expense' ? transaction.amount : -transaction.amount)) - parseFloat(formData.amount))}
                   </Text>
                 </View>
@@ -316,7 +316,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
             </View>
           )}
           {/* Date Input with Calendar Icon */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Date</Text>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Date</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
             <Calendar color={theme.colors.textSubtle} size={20} style={{ marginRight: 8 }} />
             <AppTextField
@@ -327,7 +327,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
             />
           </View>
           {/* Optional Note Input */}
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Note (optional)</Text>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Note (optional)</Text>
           <AppTextField
             value={formData.note}
             onChangeText={text => updateForm('note', text)} // Update note in form
@@ -340,7 +340,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
             onPress={handleSubmit}
             disabled={!canSubmit() || localLoading} // Disable when form invalid or loading
           >
-            <Text style={{ color: theme.colors.textMain, fontFamily: theme.font.family.bold, fontSize: theme.font.size.label }}>
+            <Text style={{ color: theme.colors.textMain, fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.label }}>
               {localLoading ? 'Saving...' : 'Save Changes'} {/* Dynamic button text */}
             </Text>
             {localLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />} {/* Loading indicator */}
@@ -354,7 +354,7 @@ const EditTransactionScreen = ({ navigation, route }) => {
         duration={1800}
         style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
       >
-        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction updated successfully</Text>
+        <Text style={{ color: '#fff', fontFamily: theme.font?.family?.medium || 'System', textAlign: 'center' }}>Transaction updated successfully</Text>
       </Snackbar>
       
       {/* Error Modal for Validation and Operation Errors */}

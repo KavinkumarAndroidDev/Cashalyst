@@ -31,6 +31,24 @@ const AppButton = ({
   children,
   ...props
 }) => {
+  // Safety check for theme object
+  if (!theme || !theme.button) {
+    return (
+      <TouchableOpacity
+        style={[{ padding: 16, backgroundColor: '#3B82F6', borderRadius: 8, alignItems: 'center' }, style]}
+        onPress={onPress}
+        disabled={disabled || loading}
+        activeOpacity={0.85}
+        {...props}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          children ? children : <Text style={[{ color: '#fff', fontSize: 16 }, labelStyle]}>{title || ''}</Text>
+        )}
+      </TouchableOpacity>
+    );
+  }
   // Combine base styles with conditional and custom styles
   const buttonStyle = [
     VARIANT_STYLES[variant] || VARIANT_STYLES.filled,
@@ -54,9 +72,9 @@ const AppButton = ({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={theme.colors.textMain} />
+        <ActivityIndicator color={theme.colors?.textMain || '#fff'} />
       ) : (
-        children ? children : <Text style={textStyle}>{title}</Text>
+        children ? children : <Text style={textStyle}>{title || ''}</Text>
       )}
     </TouchableOpacity>
   );

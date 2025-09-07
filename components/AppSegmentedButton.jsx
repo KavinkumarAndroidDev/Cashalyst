@@ -40,7 +40,7 @@ const AppSegmentedButton = ({
             {item.icon ? item.icon : null}
             <Text style={{
               color: isSelected ? theme.colors.textMain : theme.colors.textSubtle,
-              fontFamily: isSelected ? theme.font.family.bold : theme.font.family.medium,
+              fontFamily: isSelected ? theme.font?.family?.bold || 'System' : theme.font?.family?.medium || 'System',
               fontSize: theme.font.size.label,
             }}>
               {typeof item === 'string' ? item : item.label}

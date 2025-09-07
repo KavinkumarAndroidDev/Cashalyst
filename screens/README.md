@@ -4,6 +4,12 @@ This folder contains all the main screens for the Cashalyst app. Each file repre
 
 ## Screen Files Overview
 
+- **WelcomeScreen.jsx**  
+  The initial welcome screen that greets users and provides two main options: Get Started (progressive setup) or Restore from Backup.
+
+- **ProgressiveSetupScreen.jsx**  
+  A modern step-by-step onboarding flow (4 steps) with modal presentation, progress tracking, and smooth transitions for new user setup.
+
 - **HomeScreen.jsx**  
   The dashboard screen showing account balances, recent transactions, and quick actions.
 
@@ -27,7 +33,10 @@ This folder contains all the main screens for the Cashalyst app. Each file repre
   App settings including theme, currency, backup/restore, and other preferences.
 
 - **SetupScreen.jsx**  
-  Initial onboarding and setup flow for new users, including account creation and preferences.
+  Legacy onboarding flow (kept for compatibility) - replaced by WelcomeScreen + ProgressiveSetupScreen.
+
+- **RestoreScreen.jsx**  
+  Enhanced restore functionality with progress tracking, backup preview, and step indicators.
 
 - **RestoreScreen.jsx**  
   Handles restoring data from backups or previous sessions.

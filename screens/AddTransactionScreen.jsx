@@ -8,6 +8,7 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Surface, SegmentedButtons, Snackbar } from 'react-native-paper';
@@ -16,13 +17,31 @@ import useStore from '../hooks/useStore';
 import { generateId, formatCurrency } from '../utils/formatCurrency';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
+import { 
+  createFadeAnimation, 
+  createSlideAnimation, 
+  createPressScaleAnimation,
+  createShakeAnimation,
+  DURATIONS,
+  EASING 
+} from '../utils/animations';
 import { PlusCircle, ArrowDownCircle, ArrowUpCircle, Calendar, Tag, Wallet, FileText, ArrowLeft } from 'lucide-react-native';
 import AppButton from '../components/AppButton';
 import AppTextField from '../components/AppTextField';
 import AppDropdown from '../components/AppDropdown';
 import AppModal from '../components/AppModal';
+import { isThemeReady } from '../utils/themeHelpers';
 
 const AddTransactionScreen = ({ navigation }) => {
+  // Early return with loading state if theme is not ready
+  if (!isThemeReady()) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#fff', fontSize: 16, fontFamily: 'System' }}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
+
   // Get account data and transaction functions from Zustand store
   const { accounts, addTransaction, loading } = useStore();
   
@@ -43,12 +62,23 @@ const AddTransactionScreen = ({ navigation }) => {
   const [localLoading, setLocalLoading] = useState(false); // Local loading state for better UX
   const [errorModalVisible, setErrorModalVisible] = useState(false); // Error modal visibility
   const [errorMessage, setErrorMessage] = useState(''); // Error message text
+  
+  // Animation state
+  const [formFadeAnim] = useState(new Animated.Value(0)); // Form entrance animation
+  const [buttonScaleAnim] = useState(new Animated.Value(1)); // Button press animation
+  const [successAnim] = useState(new Animated.Value(0)); // Success feedback animation
+  const [categoryBounceAnim] = useState(new Animated.Value(1)); // Category selection feedback
 
   // Transaction type options with icons
   const transactionTypes = [
     { value: 'expense', label: 'Expense', icon: ArrowUpCircle },
     { value: 'income', label: 'Income', icon: ArrowDownCircle },
   ];
+
+  // Initialize entrance animations
+  useEffect(() => {
+    createFadeAnimation(formFadeAnim, 1, DURATIONS.LONG).start();
+  }, []);
 
   // Category options organized by transaction type
   const categories = {
@@ -79,9 +109,27 @@ const AddTransactionScreen = ({ navigation }) => {
     return date instanceof Date && !isNaN(date) && dateString.length === 10; // Must be exactly 10 characters
   };
 
-  // Update form field with new value
+  // Update form field with new value and add micro-animations
   const updateForm = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Add bounce feedback for category selection
+    if (field === 'category' && value) {
+      Animated.sequence([
+        Animated.spring(categoryBounceAnim, {
+          toValue: 1.05,
+          tension: 150,
+          friction: 3,
+          useNativeDriver: true,
+        }),
+        Animated.spring(categoryBounceAnim, {
+          toValue: 1,
+          tension: 150,
+          friction: 6,
+          useNativeDriver: true,
+        })
+      ]).start();
+    }
   };
 
   // Handle form submission for adding new transaction
@@ -131,7 +179,20 @@ const AddTransactionScreen = ({ navigation }) => {
       
       // Optimistically update UI for immediate feedback
       addTransaction(transaction);
-      setShowSuccess(true);
+      
+      // Enhanced success animation
+      Animated.spring(successAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 6,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowSuccess(true);
+        // Reset after animation
+        setTimeout(() => {
+          createFadeAnimation(successAnim, 0, DURATIONS.SHORT).start();
+        }, 1500);
+      });
       
       // Reset form to default values
       setFormData({
@@ -179,14 +240,15 @@ const AddTransactionScreen = ({ navigation }) => {
           >
             <ArrowLeft color={theme.colors.textMain} size={22} />
           </AppButton>
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Add Transaction</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: theme.font.size.section, color: theme.colors.textMain, letterSpacing: -0.3 }}>Add Transaction</Text>
           <View style={{ width: 40 }} /> {/* Spacer for balanced layout */}
         </View>
       </View>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <Animated.View style={{ flex: 1, opacity: formFadeAnim }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <Surface style={{ borderRadius: 12, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, padding: theme.spacing.lg, marginBottom: theme.spacing.xl, elevation: 0, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 }}>
           {/* Transaction Type Selection */}
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Transaction Type</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Transaction Type</Text>
           <View style={{ flexDirection: 'row', marginBottom: 24 }}>
             {transactionTypes.map(type => {
               const Icon = type.icon; // Get icon component for this type
@@ -210,13 +272,20 @@ const AddTransactionScreen = ({ navigation }) => {
                   activeOpacity={0.7}
                 >
                   <Icon color={isActive ? '#fff' : theme.colors.accent} size={20} style={{ marginRight: 8 }} />
-                  <Text style={{ color: isActive ? '#fff' : theme.colors.accent, fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, letterSpacing: 0.2 }}>{type.label}</Text>
+                  <Text style={{ 
+                    color: isActive ? '#fff' : theme.colors?.accent || '#3B82F6', 
+                    fontFamily: theme.font?.family?.medium || 'System', 
+                    fontSize: theme.font?.size?.label || 16, 
+                    letterSpacing: 0.2 
+                  }}>
+                    {type.label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
           {/* Amount Input Field */}
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Amount</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Amount</Text>
           <AppTextField
             value={formData.amount}
             onChangeText={text => updateForm('amount', text)} // Update amount in form
@@ -225,23 +294,25 @@ const AddTransactionScreen = ({ navigation }) => {
             placeholder="₹ 0.00"
           />
           {/* Transaction Title Input */}
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Title</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Title</Text>
           <AppTextField
             value={formData.title}
             onChangeText={text => updateForm('title', text)} // Update title in form
             style={{ marginBottom: 24 }}
             placeholder="e.g., Coffee, Salary, Groceries"
           />
-          {/* Category Dropdown Selection */}
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Category</Text>
-          <AppDropdown
-            items={categories[formData.type]} // Categories change based on transaction type
-            selectedValue={formData.category}
-            onValueChange={value => updateForm('category', value)} // Update category in form
-            style={{ marginBottom: 24 }}
-          />
+          {/* Enhanced Category Dropdown with Bounce Feedback */}
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Category</Text>
+          <Animated.View style={{ transform: [{ scale: categoryBounceAnim }] }}>
+            <AppDropdown
+              items={categories[formData.type]} // Categories change based on transaction type
+              selectedValue={formData.category}
+              onValueChange={value => updateForm('category', value)} // Update category in form
+              style={{ marginBottom: 24 }}
+            />
+          </Animated.View>
           {/* Account Source Selection */}
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Source</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Source</Text>
           <AppDropdown
             items={accounts.map(account => ({ label: account.name, value: account.name }))} // Map accounts to dropdown items
             selectedValue={formData.source}
@@ -264,7 +335,7 @@ const AddTransactionScreen = ({ navigation }) => {
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                 <Text style={{ 
-                  fontFamily: theme.font.family.bold, 
+                  fontFamily: theme.font?.family?.bold || 'System', 
                   fontSize: 16, 
                   color: theme.colors.textMain 
                 }}>
@@ -274,15 +345,15 @@ const AddTransactionScreen = ({ navigation }) => {
               
               <View style={{ marginBottom: 8 }}>
                 <Text style={{ 
-                  fontFamily: theme.font.family.medium, 
+                  fontFamily: theme.font?.family?.medium || 'System', 
                   fontSize: 14, 
-                  color: theme.colors.textSubtle, 
+                  color: theme.colors?.textSubtle || '#666', 
                   marginBottom: 4 
                 }}>
                   {formData.source} balance will change by:
                 </Text>
                 <Text style={{ 
-                  fontFamily: theme.font.family.bold, 
+                  fontFamily: theme.font?.family?.bold || 'System', 
                   fontSize: 18, 
                   color: formData.type === 'income' ? '#10B981' : '#EF4444' // Green for income, red for expense
                 }}>
@@ -300,10 +371,19 @@ const AddTransactionScreen = ({ navigation }) => {
                   borderColor: 'rgba(239, 68, 68, 0.2)',
                   marginTop: 8
                 }}>
-                  <Text style={{ color: '#EF4444', fontFamily: theme.font.family.bold, fontSize: 14, marginBottom: 4 }}>
+                  <Text style={{ 
+                    color: '#EF4444', 
+                    fontFamily: theme.font?.family?.bold || 'System', 
+                    fontSize: 14, 
+                    marginBottom: 4 
+                  }}>
                     Insufficient Balance
                   </Text>
-                  <Text style={{ color: '#EF4444', fontFamily: theme.font.family.medium, fontSize: 13 }}>
+                  <Text style={{ 
+                    color: '#EF4444', 
+                    fontFamily: theme.font?.family?.medium || 'System', 
+                    fontSize: 13 
+                  }}>
                     Current: {formatCurrency(accounts.find(acc => acc.name === formData.source)?.balance || 0)} • Shortfall: {formatCurrency(parseFloat(formData.amount) - (accounts.find(acc => acc.name === formData.source)?.balance || 0))}
                   </Text>
                 </View>
@@ -319,10 +399,10 @@ const AddTransactionScreen = ({ navigation }) => {
                   borderColor: 'rgba(16, 185, 129, 0.2)',
                   marginTop: 8
                 }}>
-                  <Text style={{ color: '#10B981', fontFamily: theme.font.family.bold, fontSize: 14, marginBottom: 4 }}>
+                  <Text style={{ color: '#10B981', fontFamily: theme.font?.family?.bold || 'System', fontSize: 14, marginBottom: 4 }}>
                     Sufficient Balance
                   </Text>
-                  <Text style={{ color: '#10B981', fontFamily: theme.family.medium, fontSize: 13 }}>
+                  <Text style={{ color: '#10B981', fontFamily: theme.font?.family?.medium || 'System', fontSize: 13 }}>
                     Remaining: {formatCurrency((accounts.find(acc => acc.name === formData.source)?.balance || 0) - parseFloat(formData.amount))}
                   </Text>
                 </View>
@@ -330,7 +410,7 @@ const AddTransactionScreen = ({ navigation }) => {
             </View>
           )}
           {/* Date Input with Format Validation */}
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Date</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Date</Text>
           <AppTextField
             value={formData.date}
             onChangeText={text => {
@@ -345,7 +425,7 @@ const AddTransactionScreen = ({ navigation }) => {
             keyboardType="numeric"
           />
           {/* Optional Note Input */}
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Note (Optional)</Text>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 16, color: theme.colors.textMain, marginBottom: 12, letterSpacing: -0.3 }}>Note (Optional)</Text>
           <AppTextField
             value={formData.note}
             onChangeText={text => updateForm('note', text)} // Update note in form
@@ -353,31 +433,43 @@ const AddTransactionScreen = ({ navigation }) => {
             placeholder="Add a note..."
           />
         </Surface>
-        {/* Submit Button with Loading State */}
-        <AppButton
-          style={{ 
-            marginTop: theme.spacing.lg, 
-            alignSelf: 'center', 
-            minWidth: 220, 
-            backgroundColor: theme.colors.accent,
-            paddingHorizontal: 32,
-            paddingVertical: 16,
-            borderRadius: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: localLoading || !canSubmit() ? 0.6 : 1 // Dim when loading or form invalid
-          }}
-          onPress={handleSubmit}
-          disabled={localLoading || !canSubmit()} // Disable when loading or form invalid
-          activeOpacity={0.7}
-        >
-          <Text style={{ color: '#fff', fontFamily: theme.font.family.bold, fontSize: theme.font.size.label, letterSpacing: 0.2 }}>
-            {localLoading ? 'Adding...' : 'Add Transaction'} {/* Dynamic button text */}
-          </Text>
-          {localLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />} {/* Loading indicator */}
-        </AppButton>
-      </ScrollView>
+        {/* Enhanced Submit Button with Animation */}
+        <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
+          <AppButton
+            style={{ 
+              marginTop: theme.spacing.lg, 
+              alignSelf: 'center', 
+              minWidth: 220, 
+              backgroundColor: theme.colors.accent,
+              paddingHorizontal: 32,
+              paddingVertical: 16,
+              borderRadius: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: localLoading || !canSubmit() ? 0.6 : 1 // Dim when loading or form invalid
+            }}
+            onPress={() => {
+              createPressScaleAnimation(buttonScaleAnim).start(() => {
+                handleSubmit();
+              });
+            }}
+            disabled={localLoading || !canSubmit()} // Disable when loading or form invalid
+            activeOpacity={0.7}
+          >
+            <Text style={{ 
+              color: '#fff', 
+              fontFamily: theme.font?.family?.bold || 'System', 
+              fontSize: theme.font?.size?.label || 16, 
+              letterSpacing: 0.2 
+            }}>
+              {localLoading ? 'Adding...' : 'Add Transaction'} {/* Dynamic button text */}
+            </Text>
+            {localLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />} {/* Loading indicator */}
+          </AppButton>
+        </Animated.View>
+        </ScrollView>
+      </Animated.View>
       {/* Success Message Snackbar */}
       <Snackbar
         visible={showSuccess}
@@ -385,7 +477,13 @@ const AddTransactionScreen = ({ navigation }) => {
         duration={1800}
         style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
       >
-        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>Transaction added successfully</Text>
+        <Text style={{ 
+          color: '#fff', 
+          fontFamily: theme.font?.family?.medium || 'System', 
+          textAlign: 'center' 
+        }}>
+          Transaction added successfully
+        </Text>
       </Snackbar>
 
       {/* Error Modal for Validation and Operation Errors */}

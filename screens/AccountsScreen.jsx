@@ -22,6 +22,15 @@ import AppModal from '../components/AppModal';
 import { ArrowLeft, PiggyBank, Coffee, Car, ShoppingCart, Film, Banknote, Calendar, FileText, Book, CreditCard, Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../utils/theme';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
+import { 
+  createFadeAnimation, 
+  createSlideAnimation, 
+  createStaggeredAnimation,
+  createPressScaleAnimation,
+  createCountingAnimation,
+  DURATIONS,
+  EASING 
+} from '../utils/animations';
 
 const AccountsScreen = ({ navigation }) => {
   // Get account management functions from Zustand store
@@ -45,6 +54,9 @@ const AccountsScreen = ({ navigation }) => {
   const [delayedLoading, setDelayedLoading] = useState(false); // Loading state for better UX
   const [balanceAnimation] = useState(new Animated.Value(1)); // Animation for balance changes
   const [lastBalance, setLastBalance] = useState(0); // Track previous balance for animations
+  const [cardSlideAnims] = useState(new Map()); // Individual slide animations for each card
+  const [listFadeAnim] = useState(new Animated.Value(0)); // Main list fade-in
+  const [fabScaleAnim] = useState(new Animated.Value(1)); // FAB press animation
   
   // Delete confirmation modal state
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -61,21 +73,44 @@ const AccountsScreen = ({ navigation }) => {
     const currentStats = getStats(); // Get updated statistics
     setStats(currentStats);
     
-    // Animate balance change if it's different from last time (skip initial load)
+    // Enhanced balance highlight animation with glow effect
     if (currentStats.totalBalance !== lastBalance && lastBalance !== 0) {
       Animated.sequence([
         Animated.timing(balanceAnimation, {
-          toValue: 1.02, // Scale up slightly
-          duration: 150,
+          toValue: 1.05, // Scale up with glow
+          duration: DURATIONS.SHORT,
+          easing: EASING.spring,
           useNativeDriver: true,
         }),
         Animated.timing(balanceAnimation, {
-          toValue: 1, // Return to normal size
-          duration: 150,
+          toValue: 1, // Return to normal
+          duration: DURATIONS.MEDIUM,
+          easing: EASING.spring,
           useNativeDriver: true,
         }),
       ]).start();
     }
+    
+    // Trigger list entrance animations on initial load
+    if (accounts.length > 0 && listFadeAnim._value === 0) {
+      // Setup individual card animations
+      accounts.forEach((account, index) => {
+        if (!cardSlideAnims.has(account.id)) {
+          cardSlideAnims.set(account.id, new Animated.Value(50));
+        }
+      });
+      
+      // Staggered entrance animations
+      Animated.parallel([
+        createFadeAnimation(listFadeAnim, 1, DURATIONS.MEDIUM),
+        createStaggeredAnimation(
+          Array.from(cardSlideAnims.values()), 
+          DURATIONS.SHORT, 
+          60 // 60ms stagger delay for smooth card reveals
+        )
+      ]).start();
+    }
+    
     setLastBalance(currentStats.totalBalance); // Update last balance for next comparison
   }, [accounts]);
 
@@ -181,25 +216,76 @@ const AccountsScreen = ({ navigation }) => {
     }
   };
 
-  // Open delete confirmation modal for account
+  // Enhanced delete with slide-out animation
   const handleDelete = (account) => {
     setAccountToDelete(account); // Set account to be deleted
     setDeleteModalVisible(true); // Show confirmation modal
   };
 
-  // Confirm and execute account deletion
+  // Confirm and execute account deletion with smooth animation
   const confirmDelete = async () => {
     if (!accountToDelete) return; // Safety check
     
-    try {
-      await deleteAccount(accountToDelete.id); // Delete from store
-      setSuccessMsg('Account deleted successfully');
-      setShowSuccess(true);
-    } catch (error) {
-      // You can add error modal here if needed
-    } finally {
-      setDeleteModalVisible(false); // Close modal
-      setAccountToDelete(null); // Clear account reference
+    const slideAnim = cardSlideAnims.get(accountToDelete.id);
+    
+    if (slideAnim) {
+      // Animate slide-out before deletion
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: -100,
+          duration: DURATIONS.MEDIUM,
+          easing: EASING.bezier,
+          useNativeDriver: true,
+        }),
+        Animated.timing(listFadeAnim, {
+          toValue: 0.7,
+          duration: DURATIONS.MEDIUM,
+          useNativeDriver: true,
+        })
+      ]).start(async () => {
+        try {
+          await deleteAccount(accountToDelete.id); // Delete from store
+          cardSlideAnims.delete(accountToDelete.id); // Remove animation reference
+          setSuccessMsg('Account deleted successfully');
+          setShowSuccess(true);
+          
+          // Restore list opacity
+          Animated.timing(listFadeAnim, {
+            toValue: 1,
+            duration: DURATIONS.SHORT,
+            useNativeDriver: true,
+          }).start();
+        } catch (error) {
+          // Revert animation if deletion fails
+          Animated.parallel([
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: DURATIONS.SHORT,
+              useNativeDriver: true,
+            }),
+            Animated.timing(listFadeAnim, {
+              toValue: 1,
+              duration: DURATIONS.SHORT,
+              useNativeDriver: true,
+            })
+          ]).start();
+        } finally {
+          setDeleteModalVisible(false); // Close modal
+          setAccountToDelete(null); // Clear account reference
+        }
+      });
+    } else {
+      // Fallback to immediate deletion if no animation
+      try {
+        await deleteAccount(accountToDelete.id);
+        setSuccessMsg('Account deleted successfully');
+        setShowSuccess(true);
+      } catch (error) {
+        // Handle error
+      } finally {
+        setDeleteModalVisible(false);
+        setAccountToDelete(null);
+      }
     }
   };
 
@@ -303,10 +389,37 @@ const AccountsScreen = ({ navigation }) => {
                 </Text>
               </View>
 
-              {/* Individual account cards within each type group */}
-              {typeAccounts.map((account, index) => (
-                <Surface key={account.id || account.name + '-' + index} style={styles.accountCard}>
-                  <View style={styles.accountRow}>
+              {/* Individual account cards with slide-in animations */}
+              {typeAccounts.map((account, index) => {
+                const slideAnim = cardSlideAnims.get(account.id) || new Animated.Value(0);
+                return (
+                  <Animated.View
+                    key={account.id || account.name + '-' + index}
+                    style={{
+                      opacity: listFadeAnim,
+                      transform: [{ translateY: slideAnim }]
+                    }}
+                  >
+                    <Surface style={styles.accountCard}>
+                      <TouchableOpacity
+                        style={styles.accountRow}
+                        onPress={() => {
+                          // Card press animation
+                          Animated.sequence([
+                            Animated.timing(slideAnim, {
+                              toValue: -2,
+                              duration: DURATIONS.SHORT,
+                              useNativeDriver: true,
+                            }),
+                            Animated.timing(slideAnim, {
+                              toValue: 0,
+                              duration: DURATIONS.SHORT,
+                              useNativeDriver: true,
+                            })
+                          ]).start();
+                        }}
+                        activeOpacity={0.7}
+                      >
                     <View style={styles.accountInfo}>
                       <View style={[
                         styles.accountIcon,
@@ -342,9 +455,11 @@ const AccountsScreen = ({ navigation }) => {
                         </TouchableOpacity>
                       </View>
                     </View>
-                  </View>
-                </Surface>
-              ))}
+                      </TouchableOpacity>
+                    </Surface>
+                  </Animated.View>
+                );
+              })}
             </View>
           );
         })}
@@ -361,13 +476,19 @@ const AccountsScreen = ({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* Floating Action Button for adding new accounts */}
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={openAddModal} // Open add account modal
-        color="white"
-      />
+      {/* Enhanced Floating Action Button with press animation */}
+      <Animated.View style={{ transform: [{ scale: fabScaleAnim }] }}>
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={() => {
+            createPressScaleAnimation(fabScaleAnim).start(() => {
+              openAddModal(); // Open add account modal
+            });
+          }}
+          color="white"
+        />
+      </Animated.View>
 
       {/* Add/Edit Account Modal with form */}
       <Modal
@@ -388,7 +509,7 @@ const AccountsScreen = ({ navigation }) => {
             </View>
             <Surface style={{ borderRadius: 20, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, padding: theme.spacing.lg, margin: theme.spacing.lg }}>
               {/* Account Type Selection */}
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Account Type</Text>
+              <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Account Type</Text>
               <AppDropdown
                 items={Object.entries(sourceTypes).map(([key, type]) => ({
                   label: type.label,
@@ -399,7 +520,7 @@ const AccountsScreen = ({ navigation }) => {
                 style={{ marginBottom: theme.spacing.lg }}
               />
               {/* Account Name Input */}
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Account Name</Text>
+              <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Account Name</Text>
               <AppTextField
                 value={formData.name}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))} // Update form data
@@ -407,7 +528,7 @@ const AccountsScreen = ({ navigation }) => {
                 style={{ marginBottom: theme.spacing.lg }}
               />
               {/* Balance Input */}
-              <Text style={{ fontFamily: theme.font.family.medium, fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Balance</Text>
+              <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: theme.font.size.label, color: theme.colors.textSubtle, marginBottom: 8 }}>Balance</Text>
               <AppTextField
                 value={formData.balance}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, balance: text }))} // Update form data
@@ -435,7 +556,7 @@ const AccountsScreen = ({ navigation }) => {
         duration={1800}
         style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
       >
-        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>{successMsg}</Text>
+        <Text style={{ color: '#fff', fontFamily: theme.font?.family?.medium || 'System', textAlign: 'center' }}>{successMsg}</Text>
       </Snackbar>
 
       {/* Delete confirmation modal with warning */}

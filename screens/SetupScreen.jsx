@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { responsiveFontSize, moderateScale } from '../utils/scale';
 import backupService from '../utils/backupService';
 import { CommonActions } from '@react-navigation/native';
+import globalEvents, { EVENT_TYPES } from '../utils/globalEvents';
 
 const { width } = Dimensions.get('window');
 
@@ -159,6 +160,14 @@ const SetupScreen = ({ navigation }) => {
   const getTotalBalance = () => {
     return sources.reduce((sum, s) => sum + (parseFloat(s.balance) || 0), 0);
   };
+
+  // Stable callback to prevent TextInput remounts
+  const handleUsernameChange = useCallback((text) => {
+    setUsername(text);
+    if (text.trim().length > 0) {
+      setUsernameError('');
+    }
+  }, []);
   //check if all sources have valid names and balances
   const canStartTracking = () => {
     const hasValidSources = sources.some(s => s.name.trim() && s.balance && parseFloat(s.balance) > 0);
@@ -226,6 +235,15 @@ const SetupScreen = ({ navigation }) => {
     setRestoreLoading(true);
     try {
       await backupService.restoreBackup();
+      
+      // Refresh all data in Zustand store after restoration
+      if (typeof useStore.getState === 'function') {
+        await useStore.getState().refreshAllData();
+      }
+      
+      // Emit global event for data restoration
+      globalEvents.emit(EVENT_TYPES.DATA_RESTORED);
+      
       setRestored(true);
       setSuccessMsg('Data restored successfully!');
       setShowSuccess(true);
@@ -250,6 +268,15 @@ const SetupScreen = ({ navigation }) => {
     setRestoreLoading(true);
     try {
       await backupService.restoreFromInternalBackup();
+      
+      // Refresh all data in Zustand store after restoration
+      if (typeof useStore.getState === 'function') {
+        await useStore.getState().refreshAllData();
+      }
+      
+      // Emit global event for data restoration
+      globalEvents.emit(EVENT_TYPES.DATA_RESTORED);
+      
       setRestored(true);
       setSuccessMsg('Data restored successfully!');
       setShowSuccess(true);
@@ -349,27 +376,23 @@ const SetupScreen = ({ navigation }) => {
       >
         {/* Welcome Header */}
         <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 20 }}>
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 24, color: theme.colors.textMain, marginBottom: 8, textAlign: 'center' }}>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 24, color: theme.colors.textMain, marginBottom: 8, textAlign: 'center' }}>
             Welcome to Cashalyst
           </Text>
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: 16, color: theme.colors.textSubtle, textAlign: 'center', lineHeight: 22 }}>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: 16, color: theme.colors.textSubtle, textAlign: 'center', lineHeight: 22 }}>
             Let's set up your financial tracking in just a few steps
           </Text>
           </View>
 
         {/* Step 1: Your Name */}
         <View style={{ marginBottom: 32 }}>
-          <Text style={{ fontFamily: theme.font.family.bold, fontSize: 18, color: theme.colors.textMain, marginBottom: 12 }}>
+          <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 18, color: theme.colors.textMain, marginBottom: 12 }}>
             What should we call you?
           </Text>
           <AppTextField
             value={username}
-            onChangeText={text => {
-              setUsername(text);
-              if (text.trim().length > 0) setUsernameError('');
-            }}
+            onChangeText={handleUsernameChange}
             placeholder="Enter your name"
-            style={{ backgroundColor: theme.colors.card, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border }}
             autoCapitalize="words"
             maxLength={24}
           />
@@ -379,14 +402,14 @@ const SetupScreen = ({ navigation }) => {
         {/* Step 2: Money Sources */}
         <View style={{ marginBottom: 32 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontFamily: theme.font.family.bold, fontSize: 18, color: theme.colors.textMain, marginRight: 6 }}>
+            <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 18, color: theme.colors.textMain, marginRight: 6 }}>
               Add your money sources
             </Text>
             <TouchableOpacity onPress={() => setShowSourceInfoModal(true)}>
             <Info color={theme.colors.accent} size={18} />
           </TouchableOpacity>
         </View>
-          <Text style={{ fontFamily: theme.font.family.medium, fontSize: 14, color: theme.colors.textSubtle, marginBottom: 16, lineHeight: 20 }}>
+          <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: 14, color: theme.colors.textSubtle, marginBottom: 16, lineHeight: 20 }}>
             Add where you keep your money (bank accounts, wallets, cash, etc.)
                 </Text>
           
@@ -405,7 +428,6 @@ const SetupScreen = ({ navigation }) => {
                     value={source.name}
                     onChangeText={(text) => updateSource(source.id, 'name', text)}
                     placeholder="Source name (e.g., SBI Savings)"
-                    style={{ backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0 }}
                   />
                     </View>
                 <TouchableOpacity onPress={() => openSourceModal(source)} style={{ padding: 8 }}>
@@ -430,7 +452,6 @@ const SetupScreen = ({ navigation }) => {
                   onChangeText={(text) => updateSource(source.id, 'balance', text)}
                   placeholder="0.00"
                   keyboardType="numeric"
-                  style={{ flex: 1, backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0 }}
                 />
               </View>
                   </Surface>
@@ -443,7 +464,7 @@ const SetupScreen = ({ navigation }) => {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
               <Plus color={theme.colors.accent} size={18} style={{ marginRight: 8 }} />
-              <Text style={{ color: theme.colors.accent, fontFamily: theme.font.family.bold, fontSize: 14 }}>
+              <Text style={{ color: theme.colors.accent, fontFamily: theme.font?.family?.bold || 'System', fontSize: 14 }}>
                 Add Another Source
               </Text>
           </View>
@@ -453,10 +474,10 @@ const SetupScreen = ({ navigation }) => {
         {/* Total Balance Preview */}
         {sources.some(s => s.balance && parseFloat(s.balance) > 0) && (
           <Surface style={{ backgroundColor: theme.colors.card, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, padding: 20, marginBottom: 32 }}>
-            <Text style={{ fontFamily: theme.font.family.medium, fontSize: 14, color: theme.colors.textSubtle, marginBottom: 4 }}>
+            <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: 14, color: theme.colors.textSubtle, marginBottom: 4 }}>
               Total Balance
           </Text>
-            <Text style={{ fontFamily: theme.font.family.bold, fontSize: 24, color: theme.colors.textMain }}>
+            <Text style={{ fontFamily: theme.font?.family?.bold || 'System', fontSize: 24, color: theme.colors.textMain }}>
               ₹{getTotalBalance().toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </Text>
           </Surface>
@@ -474,7 +495,7 @@ const SetupScreen = ({ navigation }) => {
           disabled={!canStartTracking() || delayedLoading}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: canStartTracking() ? '#fff' : theme.colors.textSubtle, fontFamily: theme.font.family.bold, fontSize: 16, marginRight: 8 }}>
+            <Text style={{ color: canStartTracking() ? '#fff' : theme.colors.textSubtle, fontFamily: theme.font?.family?.bold || 'System', fontSize: 16, marginRight: 8 }}>
               {delayedLoading ? 'Setting up...' : 'Start Tracking'}
             </Text>
             <ArrowRight color={canStartTracking() ? '#fff' : theme.colors.textSubtle} size={20} />
@@ -485,16 +506,16 @@ const SetupScreen = ({ navigation }) => {
         <View style={{ alignItems: 'center', marginTop: 16, marginBottom: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
           <Lock color={theme.colors.textSubtle} size={16} style={{ marginRight: 6 }} />
-            <Text style={{ fontFamily: theme.font.family.medium, fontSize: 12, color: theme.colors.textSubtle }}>
+            <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: 12, color: theme.colors.textSubtle }}>
               Your data is private and stored only on your device
           </Text>
           </View>
           <AppButton
             style={{ marginTop: 12, backgroundColor: 'rgba(59, 130, 246, 0.08)', borderWidth: 1, borderColor: theme.colors.accent, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10 }}
-            textStyle={{ color: theme.colors.accent, fontFamily: theme.font.family.bold, fontSize: 15 }}
+            textStyle={{ color: theme.colors.accent, fontFamily: theme.font?.family?.bold || 'System', fontSize: 15 }}
             onPress={() => navigation.navigate('RestoreScreen')}
           >
-            <Text style={{ color: theme.colors.accent, fontFamily: theme.font.family.bold, fontSize: 15 }}>Restore from Backup</Text>
+            <Text style={{ color: theme.colors.accent, fontFamily: theme.font?.family?.bold || 'System', fontSize: 15 }}>Restore from Backup</Text>
           </AppButton>
         </View>
       </ScrollView>
@@ -509,7 +530,7 @@ const SetupScreen = ({ navigation }) => {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ width: '90%', backgroundColor: theme.colors.card, borderRadius: 16, padding: 24, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 20, elevation: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontFamily: theme.font.family.bold, color: theme.colors.textMain }}>
+              <Text style={{ fontSize: 18, fontFamily: theme.font?.family?.bold || 'System', color: theme.colors.textMain }}>
                 {editingSource ? 'Edit Source' : 'Add Source'}
               </Text>
               <TouchableOpacity onPress={() => setShowSourceModal(false)}>
@@ -517,7 +538,7 @@ const SetupScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
             
-            <Text style={{ fontFamily: theme.font.family.medium, fontSize: 14, color: theme.colors.textSubtle, marginBottom: 8 }}>Type</Text>
+            <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: 14, color: theme.colors.textSubtle, marginBottom: 8 }}>Type</Text>
             <AppDropdown
               items={Object.entries(sourceTypes).map(([key, type]) => ({ label: type.label, value: key }))}
               selectedValue={sourceForm.type}
@@ -525,28 +546,26 @@ const SetupScreen = ({ navigation }) => {
               style={{ marginBottom: 16 }}
             />
             
-            <Text style={{ fontFamily: theme.font.family.medium, fontSize: 14, color: theme.colors.textSubtle, marginBottom: 8 }}>Name</Text>
+            <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: 14, color: theme.colors.textSubtle, marginBottom: 8 }}>Name</Text>
             <AppTextField
               value={sourceForm.name}
               onChangeText={text => setSourceForm(f => ({ ...f, name: text }))}
               placeholder="e.g., SBI Savings, Paytm, Cash"
-              style={{ marginBottom: 16 }}
             />
             
-            <Text style={{ fontFamily: theme.font.family.medium, fontSize: 14, color: theme.colors.textSubtle, marginBottom: 8 }}>Balance</Text>
+            <Text style={{ fontFamily: theme.font?.family?.medium || 'System', fontSize: 14, color: theme.colors.textSubtle, marginBottom: 8 }}>Balance</Text>
             <AppTextField
               value={sourceForm.balance}
               onChangeText={text => setSourceForm(f => ({ ...f, balance: text }))}
               placeholder="0.00"
               keyboardType="numeric"
-              style={{ marginBottom: 24 }}
             />
             
           <AppButton
               style={{ backgroundColor: theme.colors.accent, paddingVertical: 12, borderRadius: 8 }}
               onPress={saveSource}
             >
-              <Text style={{ color: '#fff', fontFamily: theme.font.family.bold, fontSize: 14 }}>
+              <Text style={{ color: '#fff', fontFamily: theme.font?.family?.bold || 'System', fontSize: 14 }}>
                 {editingSource ? 'Save Changes' : 'Add Source'}
             </Text>
             </AppButton>
@@ -613,7 +632,7 @@ const SetupScreen = ({ navigation }) => {
         duration={2000}
         style={{ backgroundColor: theme.colors.accent, marginBottom: 32, marginHorizontal: 16, borderRadius: 12 }}
       >
-        <Text style={{ color: '#fff', fontFamily: theme.font.family.medium, textAlign: 'center' }}>
+        <Text style={{ color: '#fff', fontFamily: theme.font?.family?.medium || 'System', textAlign: 'center' }}>
           {successMsg}
         </Text>
       </Snackbar>

@@ -421,6 +421,9 @@ class NotificationService {
       return { pendingCount: 0, dailyCount: 0, lastNotificationDate: null };
     }
   }
-
-
 }
+
+// Create and export a singleton instance
+const notificationService = new NotificationService();
+
+export default notificationService;
